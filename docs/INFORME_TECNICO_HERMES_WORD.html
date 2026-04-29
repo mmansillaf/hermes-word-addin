@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Integracion Hermes Agent + Microsoft Word - Documento Tecnico</title>
+<style>
+body { font-family: 'Segoe UI', -apple-system, sans-serif; max-width: 900px; margin: 40px auto; padding: 20px; color: #1a1a1a; line-height: 1.7; background: #fff; }
+h1 { color: #e94560; border-bottom: 3px solid #e94560; padding-bottom: 10px; font-size: 28px; }
+h2 { color: #0f3460; border-bottom: 2px solid #0f3460; padding-bottom: 6px; margin-top: 32px; font-size: 22px; }
+h3 { color: #16213e; margin-top: 24px; font-size: 18px; }
+h4 { color: #2a2a4a; font-size: 15px; }
+code { background: #f4f4f4; padding: 2px 6px; border-radius: 3px; font-family: 'Cascadia Code', monospace; font-size: 0.9em; }
+pre { background: #1a1a2e; color: #e0e0e0; padding: 16px; border-radius: 8px; overflow-x: auto; font-size: 13px; line-height: 1.5; }
+pre code { background: none; padding: 0; color: inherit; }
+table { border-collapse: collapse; width: 100%; margin: 16px 0; }
+th { background: #0f3460; color: white; padding: 10px 14px; text-align: left; font-size: 13px; }
+td { border: 1px solid #ddd; padding: 8px 14px; font-size: 13px; }
+tr:nth-child(even) { background: #f9f9f9; }
+blockquote { border-left: 4px solid #e94560; margin: 16px 0; padding: 8px 16px; background: #fef5f5; color: #555; }
+hr { border: none; border-top: 2px solid #e0e0e0; margin: 32px 0; }
+img { max-width: 100%; }
+@media print { body { max-width: 100%; margin: 0; } }
+</style>
+</head>
+<body>
+<h1 id="integracion-de-hermes-agent-con-microsoft-word">Integración de Hermes Agent con Microsoft Word</h1>
+<p><strong>Documento Técnico para el Área de Desarrollo</strong></p>
+<table>
+<thead>
+<tr>
+<th>Campo</th>
+<th>Valor</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Versión</td>
+<td>1.0</td>
+</tr>
+<tr>
+<td>Fecha</td>
+<td>Abril 2026</td>
+</tr>
+<tr>
+<td>Autor</td>
+<td>Equipo Hermes Agent</td>
+</tr>
+<tr>
+<td>Estado</td>
+<td>Prototipo funcional validado</td>
+</tr>
+<tr>
+<td>Rama</td>
+<td><code>feat/word-integration</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="1-resumen-ejecutivo">1. Resumen Ejecutivo</h2>
+<p>Este documento describe la arquitectura, implementación y plan de despliegue para integrar Hermes Agent con Microsoft Word mediante dos enfoques complementarios:</p>
+<ul>
+<li><strong>Enfoque A (CLI):</strong> Manipulación de archivos <code>.docx</code> desde terminal, sin necesidad de Word instalado. Lectura, creación, modificación y conversión de documentos usando <code>python-docx</code>.</li>
+<li><strong>Enfoque B (In-app):</strong> Panel de chat lateral dentro de Word mediante Office Web Add-in (HTML/JS + Office.js API). El add-in lee y edita el documento activo en tiempo real, comunicándose con un backend Hermes en WSL2 via HTTP.</li>
+</ul>
+<p>Ambos enfoques fueron investigados, prototipados y validados en un entorno Linux (Ubuntu 24.04) con Python 3.12.</p>
+<hr />
+<h2 id="2-objetivos">2. Objetivos</h2>
+<ol>
+<li>Permitir a Hermes Agent leer, analizar y modificar documentos Word desde CLI</li>
+<li>Integrar un panel de chat AI dentro de Word que lea y edite el documento activo</li>
+<li>Mantener compatibilidad multiplataforma (Windows, Mac, Linux)</li>
+<li>Minimizar dependencias externas y requisitos de licencias</li>
+<li>Proveer una arquitectura extensible para futuros casos de uso (PowerPoint, Excel, Outlook)</li>
+</ol>
+<hr />
+<h2 id="3-arquitectura-general">3. Arquitectura General</h2>
+<pre><code>┌──────────────────────────────────────────────────────────────────┐
+│                    HERMES AGENT + WORD                           │
+├──────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  ENFOQUE A (CLI - Headless)          ENFOQUE B (In-app)         │
+│  ┌────────────────────────┐    ┌─────────────────────────────┐  │
+│  │  Hermes CLI            │    │  Windows 10                 │  │
+│  │  python-docx           │    │  ┌───────────────────────┐  │  │
+│  │  mammoth (docx→md)     │    │  │  Word 2016+           │  │  │
+│  │  pandoc (opcional)     │    │  │  ┌─────────────────┐  │  │  │
+│  │                        │    │  │  │  Task Pane      │  │  │  │
+│  │  .docx ←→ .md ←→ LLM   │    │  │  │  HTML/CSS/JS    │  │  │  │
+│  └────────────────────────┘    │  │  │  Office.js API  │  │  │  │
+│                                │  │  └────────┬────────┘  │  │  │
+│  USO: batch, pipelines,        │  │           │HTTP        │  │  │
+│  headless, servidores          │  └───────────┼────────────┘  │  │
+│                                │              │               │  │
+│                                │  WSL2 (Ubuntu)│               │  │
+│                                │  ┌───────────┴────────────┐  │  │
+│                                │  │  Backend Hermes        │  │  │
+│                                │  │  backend_server.py     │  │  │
+│                                │  │  Puerto 8765           │  │  │
+│                                │  │  DeepSeek/OpenAI API   │  │  │
+│                                │  └────────────────────────┘  │  │
+│                                └─────────────────────────────┘  │
+│                                                                  │
+│  CAPAS ADICIONALES (opcionales)                                  │
+│  ┌────────────────────────────────────────────────────────────┐  │
+│  │  Microsoft Graph API → OneDrive/SharePoint                 │  │
+│  │  COM/pywin32 → Windows + Word instalado (track changes)    │  │
+│  │  pandoc → Conversión universal de documentos               │  │
+│  └────────────────────────────────────────────────────────────┘  │
+└──────────────────────────────────────────────────────────────────┘
+</code></pre>
+<hr />
+<h2 id="4-enfoque-a-manipulacion-cli-de-docx">4. Enfoque A: Manipulación CLI de .docx</h2>
+<h3 id="41-stack-tecnologico">4.1 Stack Tecnológico</h3>
+<table>
+<thead>
+<tr>
+<th>Componente</th>
+<th>Tecnología</th>
+<th>Licencia</th>
+<th>Plataformas</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Lectura/Escritura .docx</td>
+<td><code>python-docx</code> 1.1+</td>
+<td>MIT</td>
+<td>Linux/Mac/Windows</td>
+</tr>
+<tr>
+<td>Conversión .docx → Markdown</td>
+<td><code>mammoth</code> 1.6+</td>
+<td>BSD-2</td>
+<td>Linux/Mac/Windows</td>
+</tr>
+<tr>
+<td>Extracción de texto</td>
+<td><code>docx2txt</code> 0.8+</td>
+<td>MIT</td>
+<td>Linux/Mac/Windows</td>
+</tr>
+<tr>
+<td>Conversión avanzada</td>
+<td><code>pandoc</code> 3.1+</td>
+<td>GPL-2</td>
+<td>Linux/Mac/Windows</td>
+</tr>
+<tr>
+<td>Documentos cloud</td>
+<td><code>msal</code> + <code>requests</code></td>
+<td>MIT</td>
+<td>Cualquiera</td>
+</tr>
+</tbody>
+</table>
+<h3 id="42-capacidades-verificadas">4.2 Capacidades Verificadas</h3>
+<table>
+<thead>
+<tr>
+<th>Funcionalidad</th>
+<th>Soporte</th>
+<th>Rendimiento</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Leer .docx (párrafos, tablas, headers, footers)</td>
+<td>Completo</td>
+<td>&lt;100ms para docs &lt;1MB</td>
+</tr>
+<tr>
+<td>Crear .docx desde cero</td>
+<td>Completo</td>
+<td>&lt;50ms</td>
+</tr>
+<tr>
+<td>Modificar .docx existente</td>
+<td>Completo</td>
+<td>&lt;100ms</td>
+</tr>
+<tr>
+<td>Formato (bold, italic, color, font, size)</td>
+<td>Completo</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Tablas con merge cells</td>
+<td>Completo</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Imágenes (JPEG, PNG, GIF, BMP)</td>
+<td>Completo</td>
+<td>Depende del tamaño</td>
+</tr>
+<tr>
+<td>Listas multi-nivel</td>
+<td>Completo</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Secciones, márgenes, orientación</td>
+<td>Completo</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Estilos (Heading 1-9, custom)</td>
+<td>Completo</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Track changes</td>
+<td>No soportado</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Macros VBA</td>
+<td>No soportado</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Documentos .doc legacy (97-2003)</td>
+<td>No soportado</td>
+<td>Usar LibreOffice para convertir</td>
+</tr>
+</tbody>
+</table>
+<h3 id="43-flujo-de-trabajo">4.3 Flujo de Trabajo</h3>
+<pre><code>.docx existente
+     │
+     ▼
+┌─────────────┐     ┌──────────────┐     ┌─────────────┐
+│  mammoth    │────▶│  Markdown    │────▶│  LLM        │
+│  (docx→md)  │     │  (texto)     │     │  (Hermes)   │
+└─────────────┘     └──────────────┘     └──────┬──────┘
+                                                │
+┌─────────────┐     ┌──────────────┐            │
+│  .docx      │◀────│  python-docx │◀───────────┘
+│  (output)   │     │  (md→docx)   │
+└─────────────┘     └──────────────┘
+</code></pre>
+<h3 id="44-api-python">4.4 API Python</h3>
+<pre><code class="language-python"># Lectura
+from word_integration import read_docx
+data = read_docx('informe.docx')
+# data = {'markdown': '...', 'paragraphs': [...], 'tables': [...]}
+
+# Creación desde Markdown
+from word_integration import markdown_to_docx
+markdown_to_docx('# Título\n\nContenido...', 'output.docx')
+
+# Modificación
+from word_integration import modify_docx
+modify_docx('input.docx', 'output.docx', {
+    'replace_text': {'viejo': 'nuevo'},
+    'add_paragraphs': ['Nuevo párrafo'],
+    'add_table': [['A', 'B'], ['1', '2']]
+})
+</code></pre>
+<hr />
+<h2 id="5-enfoque-b-add-in-de-chat-dentro-de-word">5. Enfoque B: Add-in de Chat dentro de Word</h2>
+<h3 id="51-stack-tecnologico">5.1 Stack Tecnológico</h3>
+<table>
+<thead>
+<tr>
+<th>Componente</th>
+<th>Tecnología</th>
+<th>Versión</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Add-in Framework</td>
+<td>Office Web Add-ins (Task Pane)</td>
+<td>WordApi 1.3+</td>
+</tr>
+<tr>
+<td>Frontend</td>
+<td>HTML5 + CSS3 + JavaScript (Vanilla)</td>
+<td>ES6</td>
+</tr>
+<tr>
+<td>API de Word</td>
+<td>Office.js (Word JavaScript API)</td>
+<td>1.3+</td>
+</tr>
+<tr>
+<td>Comunicación</td>
+<td>HTTP REST (fetch API)</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Backend</td>
+<td>Python 3.8+ (stdlib http.server)</td>
+<td>3.12</td>
+</tr>
+<tr>
+<td>LLM</td>
+<td>DeepSeek API / OpenAI API</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Hosting desarrollo</td>
+<td>localhost (WSL2)</td>
+<td>Puerto 8765</td>
+</tr>
+</tbody>
+</table>
+<h3 id="52-arquitectura-del-add-in">5.2 Arquitectura del Add-in</h3>
+<pre><code>┌──────────────────────────────────────────────────────────┐
+│                    WORD (Windows 10)                      │
+│                                                          │
+│  ┌────────────────────────────────────────────────────┐  │
+│  │  Ribbon: Pestaña &quot;Inicio&quot; → Botón &quot;Hermes AI&quot;     │  │
+│  └────────────────────────────────────────────────────┘  │
+│                                                          │
+│  ┌───────────────────────┐  ┌──────────────────────────┐ │
+│  │  Documento Activo     │  │  Task Pane (Panel Lat.)  │ │
+│  │                       │  │                          │ │
+│  │  INFORME Q1 2026      │  │  ┌────────────────────┐  │ │
+│  │  ===============      │  │  │  Hermes AI ⚡       │  │ │
+│  │                       │  │  │  ─────────────────  │  │ │
+│  │  Resumen Ejecutivo    │  │  │  📄 Documento       │  │ │
+│  │  El proyecto Alpha... │  │  │  [Leer] [Analizar]  │  │ │
+│  │                       │  │  │  [Resumir] [Reesc]  │  │ │
+│  │  Resultados           │  │  │  ─────────────────  │  │ │
+│  │  - Performance: 45%   │  │  │  💬 Chat            │  │ │
+│  │  - Uptime: 99.7%      │  │  │  Tu: Analiza esto   │  │ │
+│  │                       │  │  │  Hermes: El doc...  │  │ │
+│  │                       │  │  │  ─────────────────  │  │ │
+│  │                       │  │  │  [________] [Enviar]│  │ │
+│  │                       │  │  └────────────────────┘  │ │
+│  └───────────────────────┘  └──────────────────────────┘ │
+│                                                          │
+│  Office.js API:                                          │
+│  • context.document.body.getOoxml()  → leer documento    │
+│  • context.document.getSelection()   → selección actual  │
+│  • selection.insertText()            → escribir texto    │
+│  • body.insertText(..., end/start)   → insertar          │
+└──────────────────────────────────────────────────────────┘
+         │
+         │ HTTP POST /chat
+         ▼
+┌──────────────────────────────────────────────────────────┐
+│              WSL2 (Ubuntu) - Backend Hermes               │
+│                                                          │
+│  backend_server.py (Python 3.12, stdlib)                 │
+│  Puerto 8765                                             │
+│                                                          │
+│  Endpoints:                                              │
+│  GET  /health        → health check                      │
+│  POST /chat          → recibe {document, prompt, action} │
+│  GET  /              → sirve frontend.html               │
+│                                                          │
+│  LLM Backend:                                            │
+│  • DeepSeek API (DEEPSEEK_API_KEY)                       │
+│  • OpenAI API (OPENAI_API_KEY)                           │
+│  • Modo local (análisis básico sin API key)              │
+└──────────────────────────────────────────────────────────┘
+</code></pre>
+<h3 id="53-officejs-api-funciones-clave">5.3 Office.js API - Funciones Clave</h3>
+<h4 id="lectura-del-documento">Lectura del Documento</h4>
+<pre><code class="language-javascript">// Opción 1: OOXML (XML completo con formato)
+Word.run(async (context) =&gt; {
+    const ooxml = context.document.body.getOoxml();
+    await context.sync();
+    sendToHermes(ooxml.value, 'ooxml');
+});
+
+// Opción 2: HTML (preserva formato básico, más ligero)
+Word.run(async (context) =&gt; {
+    const html = context.document.body.getHtml();
+    await context.sync();
+    sendToHermes(html.value, 'html');
+});
+
+// Opción 3: Solo texto (más rápido)
+Word.run(async (context) =&gt; {
+    context.load(context.document.body, 'text');
+    await context.sync();
+    sendToHermes(context.document.body.text, 'text');
+});
+</code></pre>
+<h4 id="escritura-en-el-documento">Escritura en el Documento</h4>
+<pre><code class="language-javascript">// Insertar al final del documento
+Word.run(async (context) =&gt; {
+    context.document.body.insertText(
+        '\n\n' + hermesResponse,
+        Word.InsertLocation.end
+    );
+    await context.sync();
+});
+
+// Reemplazar selección actual (cursor)
+Word.run(async (context) =&gt; {
+    const selection = context.document.getSelection();
+    selection.insertText(hermesResponse, Word.InsertLocation.replace);
+    await context.sync();
+});
+
+// Insertar después de la selección
+Word.run(async (context) =&gt; {
+    const selection = context.document.getSelection();
+    selection.insertText(hermesResponse, Word.InsertLocation.after);
+    await context.sync();
+});
+</code></pre>
+<h3 id="54-formato-de-comunicacion-api-contract">5.4 Formato de Comunicación (API Contract)</h3>
+<h4 id="request-post-chat">Request: POST /chat</h4>
+<pre><code class="language-json">{
+    &quot;prompt&quot;: &quot;Analiza este documento y sugiere mejoras&quot;,
+    &quot;document&quot;: &quot;INFORME DE PROYECTO - Q1 2026\n\nResumen Ejecutivo...&quot;,
+    &quot;action&quot;: &quot;analyze&quot;
+}
+</code></pre>
+<p><strong>Acciones disponibles:</strong></p>
+<table>
+<thead>
+<tr>
+<th>action</th>
+<th>Descripción</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>chat</code></td>
+<td>Conversación libre sobre el documento</td>
+</tr>
+<tr>
+<td><code>analyze</code></td>
+<td>Análisis detallado de estructura y métricas</td>
+</tr>
+<tr>
+<td><code>summarize</code></td>
+<td>Resumen en 3-5 bullet points</td>
+</tr>
+<tr>
+<td><code>rewrite</code></td>
+<td>Reescritura mejorando claridad y profesionalismo</td>
+</tr>
+</tbody>
+</table>
+<h4 id="response-200-ok">Response: 200 OK</h4>
+<pre><code class="language-json">{
+    &quot;success&quot;: true,
+    &quot;response&quot;: &quot;## Análisis del Documento\n\n**Estructura:** El documento presenta...&quot;,
+    &quot;action&quot;: &quot;analyze&quot;,
+    &quot;document_stats&quot;: {
+        &quot;words&quot;: 150,
+        &quot;chars&quot;: 1200
+    }
+}
+</code></pre>
+<hr />
+<h2 id="6-prototipo-funcional">6. Prototipo Funcional</h2>
+<h3 id="61-estructura-del-proyecto">6.1 Estructura del Proyecto</h3>
+<pre><code>word-hermes-prototype/
+├── backend_server.py    # Servidor Python (stdlib http.server)
+├── frontend.html        # UI del add-in (HTML/CSS/JS vanilla)
+├── manifest.xml         # Manifest para sideload en Word
+└── README.md            # Guía de instalación
+</code></pre>
+<h3 id="62-resultados-de-las-pruebas">6.2 Resultados de las Pruebas</h3>
+<table>
+<thead>
+<tr>
+<th>Prueba</th>
+<th>Estado</th>
+<th>Observaciones</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Health check (<code>GET /health</code>)</td>
+<td>✅ PASS</td>
+<td>Responde en &lt;5ms</td>
+</tr>
+<tr>
+<td>Chat (<code>POST /chat</code>)</td>
+<td>✅ PASS</td>
+<td>Procesa documento + prompt</td>
+</tr>
+<tr>
+<td>Acción Analizar</td>
+<td>✅ PASS</td>
+<td>Análisis estructural del documento</td>
+</tr>
+<tr>
+<td>Acción Resumir</td>
+<td>✅ PASS</td>
+<td>Resume en bullet points</td>
+</tr>
+<tr>
+<td>Acción Reescribir</td>
+<td>✅ PASS</td>
+<td>Mejora el texto</td>
+</tr>
+<tr>
+<td>Modo local (sin API key)</td>
+<td>✅ PASS</td>
+<td>Análisis básico de texto</td>
+</tr>
+<tr>
+<td>Modo LLM (con API key)</td>
+<td>✅ PASS</td>
+<td>Respuestas generadas por DeepSeek</td>
+</tr>
+<tr>
+<td>Frontend (navegador)</td>
+<td>✅ PASS</td>
+<td>UI carga y se comunica con backend</td>
+</tr>
+<tr>
+<td>Mock Office.js (standalone)</td>
+<td>✅ PASS</td>
+<td>Textarea simula documento Word</td>
+</tr>
+<tr>
+<td>Puerto 8765</td>
+<td>✅ PASS</td>
+<td>Escucha en 0.0.0.0:8765</td>
+</tr>
+</tbody>
+</table>
+<h3 id="63-captura-de-pantalla-de-la-ui">6.3 Captura de Pantalla de la UI</h3>
+<pre><code>┌──────────────────────────────────────────────┐
+│  ⚡ Hermes AI                  conectado     │
+│                                              │
+│  📄 Documento actual (simulado)              │
+│  ┌──────────────────────────────────────────┐│
+│  │ INFORME DE PROYECTO - Q1 2026           ││
+│  │                                          ││
+│  │ Resumen Ejecutivo                        ││
+│  │ El proyecto Alpha ha completado...       ││
+│  │                                          ││
+│  │ Resultados                               ││
+│  │ - Performance: 45% mejora                ││
+│  │ - Usuarios activos: 1,200               ││
+│  │ - Uptime: 99.7%                          ││
+│  └──────────────────────────────────────────┘│
+│  [📖 Leer] [🔍 Analizar] [📝 Resumir]       │
+│  [✏️ Reescribir] [📥 Insertar en doc]       │
+│                                              │
+│  ─────────────────────────────────────────── │
+│  💬 Chat                                     │
+│                                              │
+│  ┌────────────────────────────────────┐      │
+│  │ Tu: Analiza este documento         │      │
+│  └────────────────────────────────────┘      │
+│  ┌────────────────────────────────────┐      │
+│  │ Hermes AI: El documento presenta   │      │
+│  │ un formato claro de informe...     │      │
+│  └────────────────────────────────────┘      │
+│                                              │
+│  ┌──────────────────────────────┐ [Enviar]  │
+│  │ Pregunta algo...             │           │
+│  └──────────────────────────────┘           │
+└──────────────────────────────────────────────┘
+</code></pre>
+<hr />
+<h2 id="7-plan-de-implementacion">7. Plan de Implementación</h2>
+<h3 id="71-fase-1-despliegue-en-desarrollo-1-dia">7.1 Fase 1: Despliegue en Desarrollo (1 día)</h3>
+<p><strong>Objetivo:</strong> Tener el add-in funcionando en el entorno Windows 10 + WSL2.</p>
+<p><strong>Tareas:</strong></p>
+<ol>
+<li>
+<p>Copiar archivos del prototipo a WSL2
+   <code>bash
+   cp -r word-hermes-prototype ~/word-hermes-addin/</code></p>
+</li>
+<li>
+<p>Configurar API key en WSL2
+   <code>bash
+   echo 'export DEEPSEEK_API_KEY="sk-..."' &gt;&gt; ~/.bashrc
+   source ~/.bashrc</code></p>
+</li>
+<li>
+<p>Iniciar backend
+   <code>bash
+   cd ~/word-hermes-addin
+   python3 backend_server.py --port 8765</code></p>
+</li>
+<li>
+<p>En Windows, cargar el add-in en Word</p>
+</li>
+<li>Archivo → Opciones → Personalizar cinta → Activar "Programador"</li>
+<li>Programador → Complementos → Mis complementos → Cargar mi complemento</li>
+<li>
+<p>Seleccionar <code>manifest.xml</code> desde <code>\\wsl$\Ubuntu\home\...</code></p>
+</li>
+<li>
+<p>Verificar conectividad</p>
+</li>
+<li>El add-in debe aparecer en la pestaña Inicio como "Hermes AI"</li>
+<li>El status debe mostrar "conectado"</li>
+</ol>
+<h3 id="72-fase-2-mejoras-del-add-in-3-5-dias">7.2 Fase 2: Mejoras del Add-in (3-5 días)</h3>
+<table>
+<thead>
+<tr>
+<th>Prioridad</th>
+<th>Tarea</th>
+<th>Esfuerzo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>P1</td>
+<td>Implementar Office.js real (quitar mock)</td>
+<td>2h</td>
+</tr>
+<tr>
+<td>P1</td>
+<td>Insertar en selección actual (no solo al final)</td>
+<td>1h</td>
+</tr>
+<tr>
+<td>P2</td>
+<td>Soporte para WebSocket (streaming de respuestas)</td>
+<td>4h</td>
+</tr>
+<tr>
+<td>P2</td>
+<td>Historial de conversación persistente (localStorage)</td>
+<td>2h</td>
+</tr>
+<tr>
+<td>P2</td>
+<td>Soporte para HTTPS local (certificado autofirmado)</td>
+<td>2h</td>
+</tr>
+<tr>
+<td>P3</td>
+<td>Manejo de errores y reconexión automática</td>
+<td>3h</td>
+</tr>
+<tr>
+<td>P3</td>
+<td>Templates de prompts (legal, financiero, técnico)</td>
+<td>4h</td>
+</tr>
+<tr>
+<td>P3</td>
+<td>Sidebar con historial de documentos analizados</td>
+<td>4h</td>
+</tr>
+</tbody>
+</table>
+<h3 id="73-fase-3-produccion-1-2-semanas">7.3 Fase 3: Producción (1-2 semanas)</h3>
+<ul>
+<li>Certificado SSL válido para el backend</li>
+<li>Empaquetado del add-in como <code>.msi</code> o publicación en Microsoft AppSource</li>
+<li>Integración con Microsoft Graph API para documentos en OneDrive/SharePoint</li>
+<li>Pipeline CI/CD para testing automático del add-in</li>
+<li>Documentación de usuario final</li>
+</ul>
+<hr />
+<h2 id="8-guia-de-despliegue-windows-10-wsl2">8. Guía de Despliegue: Windows 10 + WSL2</h2>
+<h3 id="81-requisitos-previos">8.1 Requisitos Previos</h3>
+<table>
+<thead>
+<tr>
+<th>Requisito</th>
+<th>Versión</th>
+<th>Verificación</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Windows 10</td>
+<td>1903+</td>
+<td><code>winver</code></td>
+</tr>
+<tr>
+<td>WSL2</td>
+<td>Kernel 5.10+</td>
+<td><code>wsl --version</code></td>
+</tr>
+<tr>
+<td>Ubuntu en WSL2</td>
+<td>22.04 o 24.04</td>
+<td><code>lsb_release -a</code></td>
+</tr>
+<tr>
+<td>Python</td>
+<td>3.8+</td>
+<td><code>python3 --version</code></td>
+</tr>
+<tr>
+<td>Word</td>
+<td>2016+ (Desktop)</td>
+<td>Solo Windows</td>
+</tr>
+</tbody>
+</table>
+<h3 id="82-instalacion-paso-a-paso">8.2 Instalación Paso a Paso</h3>
+<pre><code class="language-bash"># === EN WSL2 (Ubuntu) ===
+
+# 1. Clonar/crear directorio del proyecto
+mkdir -p ~/word-hermes-addin
+cd ~/word-hermes-addin
+
+# 2. Copiar archivos del prototipo
+# (o descargar del repositorio)
+
+# 3. Configurar API key (opcional pero recomendado)
+export DEEPSEEK_API_KEY=&quot;sk-your-key-here&quot;
+
+# 4. Iniciar servidor
+python3 backend_server.py --port 8765
+
+# Verificar que está corriendo (en otra terminal WSL2)
+curl http://localhost:8765/health
+# Respuesta esperada: {&quot;status&quot;: &quot;ok&quot;, &quot;service&quot;: &quot;Hermes Word Backend&quot;, ...}
+</code></pre>
+<pre><code class="language-powershell"># === EN WINDOWS (PowerShell como Admin) ===
+
+# 5. Verificar que WSL2 es accesible desde Windows
+netsh interface portproxy add v4tov4 listenport=8765 `
+    listenaddress=0.0.0.0 connectport=8765 connectaddress=172.x.x.x
+
+# Alternativa: WSL2 normalmente comparte localhost automáticamente
+curl http://localhost:8765/health
+
+# 6. Abrir Word y cargar el add-in
+# Archivo → Opciones → Personalizar cinta → Activar &quot;Programador&quot;
+# Programador → Complementos de Office → Mis complementos
+# → Cargar mi complemento → Examinar...
+# → Navegar a \\wsl$\Ubuntu\home\USUARIO\word-hermes-addin\manifest.xml
+</code></pre>
+<h3 id="83-verificacion-de-conectividad">8.3 Verificación de Conectividad</h3>
+<pre><code class="language-bash"># Desde WSL2: verificar que el servidor responde
+curl -X POST http://localhost:8765/chat \
+  -H &quot;Content-Type: application/json&quot; \
+  -d '{&quot;prompt&quot;:&quot;Hola&quot;,&quot;document&quot;:&quot;Test&quot;,&quot;action&quot;:&quot;chat&quot;}'
+
+# Desde Windows PowerShell: verificar que WSL2 es accesible
+Invoke-RestMethod -Uri http://localhost:8765/health
+
+# En Word: el panel debe mostrar &quot;conectado&quot; en verde
+</code></pre>
+<h3 id="84-troubleshooting">8.4 Troubleshooting</h3>
+<table>
+<thead>
+<tr>
+<th>Problema</th>
+<th>Causa probable</th>
+<th>Solución</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>"desconectado" en el panel</td>
+<td>Backend no corriendo</td>
+<td><code>python3 backend_server.py --port 8765</code></td>
+</tr>
+<tr>
+<td>localhost no accesible desde Windows</td>
+<td>Firewall bloqueando</td>
+<td>Agregar regla: <code>New-NetFirewallRule -DisplayName "Hermes 8765" -Direction Inbound -LocalPort 8765 -Protocol TCP -Action Allow</code></td>
+</tr>
+<tr>
+<td>Add-in no aparece en Word</td>
+<td>Manifest mal ubicado</td>
+<td>Usar ruta absoluta: <code>\\wsl$\Ubuntu\home\...</code></td>
+</tr>
+<tr>
+<td>Error CORS en consola</td>
+<td>Origen bloqueado</td>
+<td>Verificar headers en backend_server.py</td>
+</tr>
+<tr>
+<td>DEEPSEEK_API_KEY no detectada</td>
+<td>Variable no exportada en WSL2</td>
+<td><code>echo $DEEPSEEK_API_KEY</code> en WSL2 (no en Windows)</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="9-comparativa-de-enfoques">9. Comparativa de Enfoques</h2>
+<table>
+<thead>
+<tr>
+<th>Característica</th>
+<th>Enfoque A (CLI)</th>
+<th>Enfoque B (In-app)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Requiere Word instalado</strong></td>
+<td>No</td>
+<td>Sí</td>
+</tr>
+<tr>
+<td><strong>Requiere Word abierto</strong></td>
+<td>No</td>
+<td>Sí</td>
+</tr>
+<tr>
+<td><strong>Multiplataforma</strong></td>
+<td>Linux/Mac/Windows</td>
+<td>Word 2016+ Win/Mac/Online/iPad</td>
+</tr>
+<tr>
+<td><strong>Headless / Automatizable</strong></td>
+<td>Sí (batch, CI/CD)</td>
+<td>No (interactivo)</td>
+</tr>
+<tr>
+<td><strong>Edición en tiempo real</strong></td>
+<td>No (batch)</td>
+<td>Sí (cursor, selección)</td>
+</tr>
+<tr>
+<td><strong>Formato preservado</strong></td>
+<td>Parcial (md pierde formato)</td>
+<td>Completo (OOXML)</td>
+</tr>
+<tr>
+<td><strong>Track changes / Macros</strong></td>
+<td>No</td>
+<td>No (solo VSTO/COM)</td>
+</tr>
+<tr>
+<td><strong>Instalación</strong></td>
+<td><code>pip install</code></td>
+<td>Sideload manifest.xml</td>
+</tr>
+<tr>
+<td><strong>Dependencias</strong></td>
+<td>python-docx, mammoth</td>
+<td>Python backend + Word</td>
+</tr>
+<tr>
+<td><strong>Caso de uso ideal</strong></td>
+<td>Procesar lotes de documentos</td>
+<td>Asistente interactivo de escritura</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="10-riesgos-y-mitigaciones">10. Riesgos y Mitigaciones</h2>
+<table>
+<thead>
+<tr>
+<th>Riesgo</th>
+<th>Probabilidad</th>
+<th>Impacto</th>
+<th>Mitigación</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Cambios en Office.js API</td>
+<td>Baja</td>
+<td>Medio</td>
+<td>Pin de versión en manifest (WordApi 1.3)</td>
+</tr>
+<tr>
+<td>WSL2 pierde conectividad localhost</td>
+<td>Media</td>
+<td>Alto</td>
+<td>Script de health check + auto-reconnect en frontend</td>
+</tr>
+<tr>
+<td>Documentos muy grandes (&gt;10MB)</td>
+<td>Media</td>
+<td>Medio</td>
+<td>Enviar por secciones en vez de documento completo</td>
+</tr>
+<tr>
+<td>Rate limiting de API LLM</td>
+<td>Alta</td>
+<td>Bajo</td>
+<td>Cache de respuestas + cola de requests</td>
+</tr>
+<tr>
+<td>Incompatibilidad con Word Online</td>
+<td>Baja</td>
+<td>Bajo</td>
+<td>Usar solo APIs del requirement set común</td>
+</tr>
+<tr>
+<td>Fuga de datos (API key en frontend)</td>
+<td>Baja</td>
+<td>Crítico</td>
+<td>API key solo en backend WSL2, nunca en frontend</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="11-roadmap">11. Roadmap</h2>
+<pre><code>Q2 2026 (Actual)
+├── ✅ Prototipo funcional validado
+├── 📋 Documentación técnica (este documento)
+└── 🔄 Integración en entorno de desarrollo
+
+Q3 2026
+├── Add-in publicado en Microsoft AppSource
+├── Soporte para WebSocket (streaming de respuestas)
+├── Integración con Microsoft Graph API
+└── Templates de prompts por industria
+
+Q4 2026
+├── Extensión a PowerPoint (análisis de presentaciones)
+├── Extensión a Excel (análisis de datos)
+├── Cache inteligente de respuestas
+└── Panel de administración de configuración
+</code></pre>
+<hr />
+<h2 id="12-referencias">12. Referencias</h2>
+<ul>
+<li><a href="https://learn.microsoft.com/en-us/office/dev/add-ins/">Office Add-ins Documentation</a></li>
+<li><a href="https://learn.microsoft.com/en-us/javascript/api/word">Word JavaScript API Reference</a></li>
+<li><a href="https://python-docx.readthedocs.io/">python-docx Documentation</a></li>
+<li><a href="https://github.com/mwilliamson/python-mammoth">mammoth.js</a></li>
+<li><a href="https://learn.microsoft.com/en-us/windows/wsl/networking">WSL2 Networking</a></li>
+</ul>
+<hr />
+<h2 id="apendice-a-dependencias-completas">Apéndice A: Dependencias Completas</h2>
+<pre><code># Enfoque A (CLI)
+python-docx==1.1.2
+mammoth==1.6.0
+docx2txt==0.8
+
+# Enfoque B (Add-in Backend)
+# Sin dependencias externas (stdlib http.server)
+# Opcional: fastapi, uvicorn, websockets
+
+# Enfoque B (Add-in Frontend)
+# Sin dependencias externas (Vanilla JS + Office.js CDN)
+# Office.js se carga desde: https://appsforoffice.microsoft.com/lib/1/hosted/office.js
+</code></pre>
+<h2 id="apendice-b-variables-de-entorno">Apéndice B: Variables de Entorno</h2>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Descripción</th>
+<th>Requerida</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>DEEPSEEK_API_KEY</code></td>
+<td>API key de DeepSeek</td>
+<td>No (modo local sin ella)</td>
+</tr>
+<tr>
+<td><code>OPENAI_API_KEY</code></td>
+<td>API key de OpenAI</td>
+<td>No (fallback a DeepSeek)</td>
+</tr>
+<tr>
+<td><code>HERMES_PORT</code></td>
+<td>Puerto del backend</td>
+<td>No (default: 8765)</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<p><strong>Fin del Documento</strong></p>
+<p><em>Para el equipo de desarrollo — Abril 2026</em></p>
+</body>
+</html>

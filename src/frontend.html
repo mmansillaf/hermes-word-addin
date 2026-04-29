@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hermes AI - Word Assistant</title>
+    <style>
+        :root {
+            --bg: #1a1a2e;
+            --panel: #16213e;
+            --accent: #0f3460;
+            --highlight: #e94560;
+            --text: #e0e0e0;
+            --text-dim: #a0a0b0;
+            --border: #2a2a4a;
+            --user-bubble: #0f3460;
+            --hermes-bubble: #16213e;
+            --success: #00c853;
+            --warning: #ffab00;
+            --input-bg: #0d1117;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            font-size: 13px;
+            overflow: hidden;
+        }
+        
+        /* Header */
+        .header {
+            background: var(--panel);
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+        .header .logo {
+            font-weight: 700;
+            font-size: 15px;
+            color: var(--highlight);
+        }
+        .header .status {
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            background: var(--success);
+            color: #000;
+            font-weight: 600;
+        }
+        .header .status.disconnected {
+            background: var(--warning);
+        }
+        
+        /* Document preview */
+        .doc-preview {
+            background: var(--input-bg);
+            border-bottom: 1px solid var(--border);
+            padding: 8px 14px;
+            flex-shrink: 0;
+            max-height: 180px;
+            overflow-y: auto;
+        }
+        .doc-preview label {
+            font-size: 10px;
+            text-transform: uppercase;
+            color: var(--text-dim);
+            letter-spacing: 1px;
+            display: block;
+            margin-bottom: 4px;
+        }
+        .doc-preview textarea {
+            width: 100%;
+            min-height: 60px;
+            background: transparent;
+            border: none;
+            color: var(--text);
+            font-family: inherit;
+            font-size: 12px;
+            resize: vertical;
+            outline: none;
+        }
+        .doc-preview textarea:focus {
+            background: rgba(255,255,255,0.03);
+        }
+        .doc-actions {
+            display: flex;
+            gap: 6px;
+            margin-top: 6px;
+            flex-wrap: wrap;
+        }
+        .doc-actions button {
+            font-size: 10px;
+            padding: 4px 10px;
+            background: var(--accent);
+            border: 1px solid var(--border);
+            color: var(--text);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .doc-actions button:hover {
+            background: var(--highlight);
+            border-color: var(--highlight);
+        }
+        .doc-actions button.primary {
+            background: var(--highlight);
+            font-weight: 600;
+        }
+        
+        /* Chat area */
+        .chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .message {
+            padding: 8px 12px;
+            border-radius: 8px;
+            max-width: 90%;
+            animation: fadeIn 0.2s ease;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .message.user {
+            align-self: flex-end;
+            background: var(--user-bubble);
+            border: 1px solid var(--border);
+        }
+        .message.hermes {
+            align-self: flex-start;
+            background: var(--hermes-bubble);
+            border: 1px solid var(--border);
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        .message .role {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 3px;
+            opacity: 0.7;
+        }
+        .message.system {
+            align-self: center;
+            background: transparent;
+            border: 1px dashed var(--border);
+            color: var(--text-dim);
+            font-size: 11px;
+            text-align: center;
+        }
+        
+        /* Input area */
+        .input-area {
+            background: var(--panel);
+            padding: 10px 14px;
+            border-top: 1px solid var(--border);
+            flex-shrink: 0;
+            display: flex;
+            gap: 8px;
+            align-items: flex-end;
+        }
+        .input-area textarea {
+            flex: 1;
+            min-height: 36px;
+            max-height: 100px;
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text);
+            padding: 8px 10px;
+            font-family: inherit;
+            font-size: 12px;
+            resize: none;
+            outline: none;
+        }
+        .input-area textarea:focus {
+            border-color: var(--highlight);
+        }
+        .input-area button {
+            padding: 8px 16px;
+            background: var(--highlight);
+            border: none;
+            color: #fff;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 12px;
+            transition: opacity 0.15s;
+            white-space: nowrap;
+        }
+        .input-area button:hover { opacity: 0.9; }
+        .input-area button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        
+        /* Loading dots */
+        .loading-dots::after {
+            content: '';
+            animation: dots 1.5s steps(4) infinite;
+        }
+        @keyframes dots {
+            0% { content: ''; }
+            25% { content: '.'; }
+            50% { content: '..'; }
+            75% { content: '...'; }
+        }
+        
+        /* Notification */
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--success);
+            color: #000;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            z-index: 100;
+            animation: fadeIn 0.2s ease;
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <span class="logo">⚡ Hermes AI</span>
+    <span class="status" id="status">conectado</span>
+    <span style="font-size: 10px; color: var(--text-dim); margin-left: auto;">
+        <span id="mode-badge">MODO SIMULACION</span>
+    </span>
+</div>
+
+<div class="doc-preview">
+    <label>📄 Documento actual (simulado)</label>
+    <textarea id="document-text" placeholder="Escribe o pega el contenido de tu documento aqui...&#10;&#10;En Word real, esto se leera automaticamente del documento activo.">INFORME DE PROYECTO - Q1 2026
+
+Resumen Ejecutivo
+El proyecto Alpha ha completado su fase 1 con exito. Se implementaron 3 modulos 
+principales: autenticacion, dashboard, y reportes. El equipo de 5 desarrolladores 
+entrego en tiempo record de 6 semanas.
+
+Resultados
+- Performance: 45% mejora en tiempos de carga
+- Usuarios activos: 1,200 (meta: 1,000)
+- Uptime: 99.7%
+- Bugs reportados: 12 (todos resueltos)
+
+Proximos Pasos
+Fase 2 comenzara en mayo con foco en integraciones externas y modulo de IA.</textarea>
+    <div class="doc-actions">
+        <button onclick="readDocument()" title="Leer documento">📖 Leer doc</button>
+        <button onclick="sendAction('analyze')" title="Analizar documento">🔍 Analizar</button>
+        <button onclick="sendAction('summarize')" title="Resumir documento">📝 Resumir</button>
+        <button onclick="sendAction('rewrite')" title="Reescribir documento">✏️ Reescribir</button>
+        <button class="primary" onclick="insertResponse()" title="Insertar ultima respuesta en documento">📥 Insertar en doc</button>
+    </div>
+</div>
+
+<div class="chat-container" id="chat-container">
+    <div class="message system">
+        Hermes AI listo. Escribe tu consulta o usa los botones para analizar el documento.
+    </div>
+</div>
+
+<div class="input-area">
+    <textarea id="user-input" 
+              placeholder="Pregunta algo sobre el documento..."
+              rows="1"
+              onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage();}"></textarea>
+    <button onclick="sendMessage()" id="send-btn">Enviar</button>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// CONFIGURACION
+// ═══════════════════════════════════════════════════════════════
+const BACKEND_URL = 'http://localhost:8765';
+let lastResponse = '';
+let isOfficeContext = false; // Se detecta automaticamente
+
+// ═══════════════════════════════════════════════════════════════
+// DETECCION DE CONTEXTO (Word Add-in vs Standalone)
+// ═══════════════════════════════════════════════════════════════
+function detectContext() {
+    // Office.js esta disponible en el contexto del add-in
+    if (typeof Office !== 'undefined' && Office.context) {
+        isOfficeContext = true;
+        document.getElementById('mode-badge').textContent = 'WORD ADD-IN';
+        document.getElementById('mode-badge').style.color = '#00c853';
+        
+        // Inicializar Office
+        Office.onReady((info) => {
+            if (info.host === Office.HostType.Word) {
+                console.log('Hermes: Add-in corriendo en Word');
+                updateStatus('conectado');
+            }
+        });
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// OFFICE.JS API - Lectura del documento real
+// ═══════════════════════════════════════════════════════════════
+async function getWordDocument() {
+    if (!isOfficeContext) {
+        // MOCK: leer del textarea en modo simulacion
+        return document.getElementById('document-text').value;
+    }
+    
+    // REAL: leer el documento activo en Word
+    return new Promise((resolve) => {
+        Word.run(async (context) => {
+            const body = context.document.body;
+            
+            // Opcion 1: Texto plano (rapido, pierde formato)
+            // context.load(body, 'text');
+            // await context.sync();
+            // resolve(body.text);
+            
+            // Opcion 2: HTML (preserva formato basico)
+            const html = body.getHtml();
+            await context.sync();
+            resolve(html.value);
+            
+            // Opcion 3: OOXML (preserva TODO el formato)
+            // const ooxml = body.getOoxml();
+            // await context.sync();
+            // resolve(ooxml.value);
+        }).catch(error => {
+            console.error('Error leyendo documento:', error);
+            resolve('ERROR: ' + error.message);
+        });
+    });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// OFFICE.JS API - Escritura en el documento real
+// ═══════════════════════════════════════════════════════════════
+async function insertInWord(text) {
+    if (!isOfficeContext) {
+        // MOCK: insertar en el textarea
+        const ta = document.getElementById('document-text');
+        ta.value += '\n\n' + text;
+        showNotification('Texto insertado en documento (simulado)');
+        return;
+    }
+    
+    // REAL: insertar en el documento activo de Word
+    Word.run(async (context) => {
+        // Insertar al final del documento
+        const body = context.document.body;
+        body.insertText('\n\n' + text, Word.InsertLocation.end);
+        
+        // Alternativa: insertar donde esta el cursor
+        // const selection = context.document.getSelection();
+        // selection.insertText(text, Word.InsertLocation.replace);
+        
+        await context.sync();
+        showNotification('Texto insertado en documento Word');
+    }).catch(error => {
+        console.error('Error insertando en Word:', error);
+        showNotification('Error: ' + error.message, true);
+    });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// COMUNICACION CON BACKEND HERMES
+// ═══════════════════════════════════════════════════════════════
+async function callHermes(prompt, action = 'chat') {
+    const documentText = await getWordDocument();
+    
+    const response = await fetch(BACKEND_URL + '/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            prompt: prompt,
+            document: documentText,
+            action: action
+        })
+    });
+    
+    if (!response.ok) {
+        throw new Error(`Backend error: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    if (!data.success) throw new Error(data.error);
+    
+    lastResponse = data.response;
+    return data;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// HEALTH CHECK
+// ═══════════════════════════════════════════════════════════════
+async function checkBackend() {
+    try {
+        const resp = await fetch(BACKEND_URL + '/health');
+        if (resp.ok) {
+            updateStatus('conectado');
+            return true;
+        }
+    } catch (e) {
+        updateStatus('desconectado');
+    }
+    return false;
+}
+
+function updateStatus(state) {
+    const el = document.getElementById('status');
+    el.textContent = state;
+    el.className = 'status' + (state === 'desconectado' ? ' disconnected' : '');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// UI - Chat
+// ═══════════════════════════════════════════════════════════════
+function addMessage(role, text) {
+    const container = document.getElementById('chat-container');
+    const div = document.createElement('div');
+    div.className = `message ${role}`;
+    div.innerHTML = `<div class="role">${role === 'hermes' ? 'Hermes AI' : 'Tu'}</div>${escapeHtml(text)}`;
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
+}
+
+function escapeHtml(text) {
+    return text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/\n/g, '<br>');
+}
+
+function setLoading(loading) {
+    const btn = document.getElementById('send-btn');
+    btn.disabled = loading;
+    btn.textContent = loading ? '...' : 'Enviar';
+}
+
+function showNotification(msg, isError = false) {
+    const div = document.createElement('div');
+    div.className = 'notification';
+    div.style.background = isError ? 'var(--highlight)' : 'var(--success)';
+    div.textContent = msg;
+    document.body.appendChild(div);
+    setTimeout(() => div.remove(), 2500);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ACCIONES PRINCIPALES
+// ═══════════════════════════════════════════════════════════════
+async function sendMessage() {
+    const input = document.getElementById('user-input');
+    const prompt = input.value.trim();
+    if (!prompt) return;
+    
+    input.value = '';
+    addMessage('user', prompt);
+    setLoading(true);
+    
+    try {
+        const data = await callHermes(prompt, 'chat');
+        addMessage('hermes', data.response);
+    } catch (error) {
+        addMessage('hermes', '❌ Error: ' + error.message + '\n\nAsegurate de que el backend este corriendo en ' + BACKEND_URL);
+    } finally {
+        setLoading(false);
+    }
+}
+
+async function sendAction(action) {
+    const prompts = {
+        'analyze': 'Analiza este documento en detalle: estructura, puntos clave, metricas, y areas de mejora.',
+        'summarize': 'Resume este documento en 3-5 bullet points clave.',
+        'rewrite': 'Reescribe este documento mejorando claridad, estructura y profesionalismo.'
+    };
+    
+    const prompt = prompts[action] || 'Analiza este documento.';
+    addMessage('user', `[${action.toUpperCase()}] ${prompt}`);
+    setLoading(true);
+    
+    try {
+        const data = await callHermes(prompt, action);
+        addMessage('hermes', data.response);
+    } catch (error) {
+        addMessage('hermes', '❌ Error: ' + error.message);
+    } finally {
+        setLoading(false);
+    }
+}
+
+async function readDocument() {
+    const text = await getWordDocument();
+    addMessage('system', `📄 Documento leido: ${text.split(/\s+/).length} palabras, ${text.length} caracteres.`);
+}
+
+async function insertResponse() {
+    if (!lastResponse) {
+        showNotification('No hay respuesta para insertar. Envia un mensaje primero.', true);
+        return;
+    }
+    await insertInWord(lastResponse);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════
+detectContext();
+checkBackend();
+setInterval(checkBackend, 30000); // Health check cada 30s
+
+console.log('Hermes Word Add-in v0.1.0 - ' + (isOfficeContext ? 'Word' : 'Simulacion'));
+</script>
+
+</body>
+</html>

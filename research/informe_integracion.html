@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hermes Agent ↔ Microsoft Word — Informe de Integración</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --bg-card: #161b22;
+    --bg-code: #1a1f2b;
+    --border: #30363d;
+    --text: #c9d1d9;
+    --text-dim: #8b949e;
+    --accent: #58a6ff;
+    --accent2: #3fb950;
+    --warn: #d2991d;
+    --danger: #f85149;
+    --heading: #e6edf3;
+    --radius: 8px;
+    --font-mono: 'SF Mono', 'Cascadia Code', 'Fira Code', monospace;
+    --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-sans);
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+  .container { max-width: 960px; margin: 0 auto; padding: 0 24px; }
+
+  /* Header */
+  .hero {
+    background: linear-gradient(135deg, #0d1117 0%, #161b22 50%, #0a1a2e 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 60px 0 50px;
+    text-align: center;
+  }
+  .hero-badge {
+    display: inline-block;
+    background: rgba(88,166,255,0.1);
+    border: 1px solid rgba(88,166,255,0.3);
+    color: var(--accent);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 4px 14px;
+    border-radius: 20px;
+    margin-bottom: 20px;
+  }
+  .hero h1 {
+    font-size: 2.4rem;
+    font-weight: 800;
+    color: var(--heading);
+    letter-spacing: -0.02em;
+    margin-bottom: 12px;
+  }
+  .hero h1 span { color: var(--accent); }
+  .hero .subtitle {
+    color: var(--text-dim);
+    font-size: 1.1rem;
+    max-width: 600px;
+    margin: 0 auto 24px;
+  }
+  .hero-meta {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    color: var(--text-dim);
+    font-size: 0.85rem;
+    flex-wrap: wrap;
+  }
+  .hero-meta span { display: flex; align-items: center; gap: 6px; }
+  .hero-meta .dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
+  .dot-green { background: var(--accent2); }
+  .dot-blue { background: var(--accent); }
+
+  /* Navigation */
+  nav.toc {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px 32px;
+    margin: 32px 0;
+  }
+  nav.toc h2 {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+    margin-bottom: 16px;
+  }
+  nav.toc ol { list-style: none; counter-reset: toc; }
+  nav.toc li { counter-increment: toc; margin-bottom: 8px; }
+  nav.toc a {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: color 0.15s;
+  }
+  nav.toc a:hover { color: var(--heading); }
+  nav.toc a::before {
+    content: counter(toc, decimal-leading-zero);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    min-width: 28px;
+  }
+
+  /* Sections */
+  section { margin: 48px 0; }
+  section h2 {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--heading);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 12px;
+    margin-bottom: 24px;
+  }
+  section h3 {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--heading);
+    margin: 32px 0 14px;
+  }
+  section h4 {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--text);
+    margin: 20px 0 10px;
+  }
+  p { margin-bottom: 14px; color: var(--text); }
+  strong { color: var(--heading); }
+
+  /* Cards */
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin: 20px 0;
+  }
+  .card.accent-left { border-left: 3px solid var(--accent); }
+  .card.green-left { border-left: 3px solid var(--accent2); }
+  .card.warn-left { border-left: 3px solid var(--warn); }
+
+  /* Tables */
+  .table-wrap { overflow-x: auto; margin: 20px 0; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+  }
+  th {
+    background: var(--bg-code);
+    color: var(--heading);
+    font-weight: 600;
+    text-align: left;
+    padding: 10px 14px;
+    border-bottom: 2px solid var(--border);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(88,166,255,0.03); }
+
+  /* Code */
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    background: var(--bg-code);
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: var(--accent2);
+  }
+  pre {
+    background: var(--bg-code);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    overflow-x: auto;
+    margin: 16px 0;
+    font-size: 0.82rem;
+    line-height: 1.55;
+  }
+  pre code {
+    background: none;
+    padding: 0;
+    color: var(--text);
+  }
+
+  /* Badges */
+  .badge {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .badge-green { background: rgba(63,185,80,0.15); color: var(--accent2); }
+  .badge-yellow { background: rgba(210,153,29,0.15); color: var(--warn); }
+  .badge-red { background: rgba(248,81,73,0.15); color: var(--danger); }
+  .badge-blue { background: rgba(88,166,255,0.15); color: var(--accent); }
+
+  /* Architecture Diagram */
+  .arch-diagram {
+    background: var(--bg-code);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px;
+    margin: 20px 0;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    line-height: 1.5;
+    color: var(--text);
+    white-space: pre;
+    overflow-x: auto;
+  }
+
+  /* Comparison grid */
+  .stars {
+    color: var(--warn);
+    letter-spacing: 2px;
+  }
+  .stars-dim { color: var(--text-dim); }
+
+  /* Footer */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 32px 0;
+    margin-top: 60px;
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 0.85rem;
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .hero h1 { font-size: 1.8rem; }
+    .hero-meta { gap: 12px; font-size: 0.78rem; }
+    section h2 { font-size: 1.3rem; }
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="container">
+    <div class="hero-badge">Research Report v1.0</div>
+    <h1>Hermes Agent <span>↔</span> Microsoft Word</h1>
+    <p class="subtitle">Investigación exhaustiva de opciones, estrategias y arquitectura para integrar un panel de chat AI dentro de Microsoft Word.</p>
+    <div class="hero-meta">
+      <span><span class="dot dot-green"></span> 29 Abril 2026</span>
+      <span><span class="dot dot-blue"></span> DeepSeek v4-pro</span>
+      <span>⏱ 6 fuentes analizadas</span>
+      <span>📊 4 enfoques evaluados</span>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+
+<!-- TOC -->
+<nav class="toc">
+  <h2>Contenido</h2>
+  <ol>
+    <li><a href="#s1">Resumen Ejecutivo</a></li>
+    <li><a href="#s2">Estado del Arte: Ecosistema Word + AI</a></li>
+    <li><a href="#s3">Enfoques de Integración</a></li>
+    <li><a href="#s4">MCP Servers para Word: Análisis Comparativo</a></li>
+    <li><a href="#s5">Arquitectura Propuesta</a></li>
+    <li><a href="#s6">Plan de Implementación</a></li>
+    <li><a href="#s7">Competitive Landscape</a></li>
+    <li><a href="#s8">Riesgos y Desafíos</a></li>
+    <li><a href="#s9">Conclusiones y Recomendaciones</a></li>
+    <li><a href="#s10">Referencias</a></li>
+  </ol>
+</nav>
+
+<!-- 1. Resumen Ejecutivo -->
+<section id="s1">
+  <h2>1. Resumen Ejecutivo</h2>
+
+  <div class="card accent-left">
+    <h3>Objetivo</h3>
+    <p>Integrar <strong>Hermes Agent</strong> como un panel de chat lateral dentro de Microsoft Word, permitiendo interacción bidireccional: leer el documento activo, procesarlo con LLMs, e insertar respuestas directamente en el documento.</p>
+  </div>
+
+  <div class="card green-left">
+    <h3>Hallazgo Principal</h3>
+    <p>Existen <strong>3 enfoques viables</strong> y <strong>6 MCP servers open source</strong> que pueden aprovecharse. La opción recomendada combina un <strong>Office Web Add-in (HTML/JS + Office.js)</strong> como frontend dentro de Word, con un <strong>backend Python (FastAPI + WebSocket)</strong> que expone el LLM via Hermes Agent, complementado por un <strong>MCP Server</strong> para operaciones avanzadas sobre .docx.</p>
+  </div>
+
+  <div class="table-wrap">
+  <table>
+    <tr><th>Métrica</th><th>Valor</th></tr>
+    <tr><td>Tiempo de desarrollo (MVP)</td><td>3-5 días</td></tr>
+    <tr><td>Tiempo de desarrollo (Producción)</td><td>2-3 semanas</td></tr>
+    <tr><td>Dificultad</td><td>Media</td></tr>
+    <tr><td>Cobertura multiplataforma</td><td>Windows, Mac, Web, iPad (Office.js)</td></tr>
+    <tr><td>Proyectos open source existentes</td><td>6 MCP servers, 0 add-ins completos con chat</td></tr>
+    <tr><td>Costo de licencia</td><td>$0 (open source, solo API keys de LLM)</td></tr>
+  </table>
+  </div>
+</section>
+
+<!-- 2. Estado del Arte -->
+<section id="s2">
+  <h2>2. Estado del Arte: Ecosistema Word + AI</h2>
+
+  <h3>2.1 Panorama General</h3>
+  <p>El ecosistema de integración Word+AI está fragmentado en <strong>3 capas</strong>:</p>
+
+  <div class="arch-diagram">
+┌────────────────────────────────────────────────────────────┐
+│  CAPA 1: IN-APP (Word Add-ins)                             │
+│  Office.js API · VSTO/COM · Task Pane · Dialog             │
+│  ─────────────────────────────────────────────              │
+│  CAPA 2: HEADLESS (sin Word)                               │
+│  python-docx · pandoc · mammoth · OOXML puro               │
+│  ─────────────────────────────────────────────              │
+│  CAPA 3: PROTOCOLO (MCP)                                   │
+│  MCP Servers · Stdio/SSE · FastMCP                         │
+└────────────────────────────────────────────────────────────┘
+  </div>
+
+  <h3>2.2 Microsoft Copilot (Referente de Mercado)</h3>
+  <p>Microsoft Copilot en Word (2024+) es el estándar:</p>
+  <ul style="list-style: none; padding: 0;">
+    <li style="padding: 4px 0;">✅ Panel lateral con chat contextual al documento</li>
+    <li style="padding: 4px 0;">✅ Capacidades: draft, rewrite, summarize, analyze</li>
+    <li style="padding: 4px 0;">✅ Modelos GPT-4/GPT-4o via Azure OpenAI</li>
+    <li style="padding: 4px 0;">✅ Integración con Microsoft Graph (OneDrive/SharePoint)</li>
+    <li style="padding: 4px 0;">❌ <strong>Solo Microsoft 365 Copilot ($30/usuario/mes)</strong></li>
+    <li style="padding: 4px 0;">❌ <strong>No es open source</strong></li>
+    <li style="padding: 4px 0;">❌ <strong>No permite modelos custom</strong></li>
+  </ul>
+
+  <h3>2.3 Proyectos Open Source</h3>
+  <div class="table-wrap">
+  <table>
+    <tr><th>Proyecto</th><th style="text-align:right">★</th><th>Enfoque</th><th>Estado</th></tr>
+    <tr>
+      <td><code>GongRzhe/Office-Word-MCP-Server</code></td>
+      <td style="text-align:right"><span class="stars">★★★★★</span> 1,902</td>
+      <td>MCP + python-docx</td>
+      <td><span class="badge badge-yellow">Archivado</span></td>
+    </tr>
+    <tr>
+      <td><code>OfficeMCP/OfficeMCP</code></td>
+      <td style="text-align:right">78</td>
+      <td>COM/Windows + Python</td>
+      <td><span class="badge badge-green">Activo</span></td>
+    </tr>
+    <tr>
+      <td><code>PsychQuant/che-word-mcp</code></td>
+      <td style="text-align:right">3</td>
+      <td>Swift puro + OOXML</td>
+      <td><span class="badge badge-green">Activo v3.13.5</span></td>
+    </tr>
+    <tr>
+      <td><code>ForLegalAI/mcp-ms-office-documents</code></td>
+      <td style="text-align:right">25</td>
+      <td>MCP + python-docx/pptx</td>
+      <td><span class="badge badge-green">Activo</span></td>
+    </tr>
+    <tr>
+      <td><code>vAirpower/macos-office365-mcp-server</code></td>
+      <td style="text-align:right">13</td>
+      <td>AppleScript + python-docx</td>
+      <td><span class="badge badge-green">Activo</span></td>
+    </tr>
+    <tr>
+      <td><code>ecator/cs-office-mcp-server</code></td>
+      <td style="text-align:right">—</td>
+      <td>C# MCP server</td>
+      <td><span class="badge badge-green">Activo</span></td>
+    </tr>
+  </table>
+  </div>
+
+  <div class="card warn-left">
+    <strong>🔍 Hallazgo crítico:</strong> Ninguno de estos proyectos implementa un panel de chat DENTRO de Word. Son servidores MCP que manipulan archivos .docx, pero sin interfaz de usuario en Word. <strong>Hay un vacío de mercado claro.</strong>
+  </div>
+</section>
+
+<!-- 3. Enfoques de Integración -->
+<section id="s3">
+  <h2>3. Enfoques de Integración</h2>
+
+  <h3>3.1 Office Web Add-in (HTML/JS + Office.js) ⭐ Recomendado</h3>
+
+  <div class="arch-diagram">
+┌──────────────────────────────────────────────────────┐
+│  WORD (Windows / Mac / Online / iPad)                 │
+│  ┌────────────────────────────────────────────────┐  │
+│  │  TASK PANE (panel lateral HTML/CSS/JS)         │  │
+│  │  ┌──────────────────────────────────────────┐  │  │
+│  │  │  Chat UI                                  │  │  │
+│  │  │  · Historial de conversación              │  │  │
+│  │  │  · Input de texto                        │  │  │
+│  │  │  · Botones: Leer/Analizar/Resumir/       │  │  │
+│  │  │    Reescribir/Insertar                   │  │  │
+│  │  └──────────────────────────────────────────┘  │  │
+│  │           ↕ Office.js API                       │  │
+│  │  ┌──────────────────────────────────────────┐  │  │
+│  │  │  Documento activo                         │  │  │
+│  │  │  · body.getOoxml() / getHtml() / text     │  │  │
+│  │  │  · getSelection().insertText()            │  │  │
+│  │  │  · paragraphs, tables, content controls   │  │  │
+│  │  └──────────────────────────────────────────┘  │  │
+│  └────────────────────────────────────────────────┘  │
+│              ↕ WebSocket / SSE (streaming)            │
+│  ┌────────────────────────────────────────────────┐  │
+│  │  BACKEND HERMES (local/WSL/Docker)             │  │
+│  │  · FastAPI + WebSocket                         │  │
+│  │  · Recibe OOXML → convierte a texto limpio     │  │
+│  │  · LLM (DeepSeek v4, GPT, Claude)              │  │
+│  │  · Devuelve respuesta + instrucciones          │  │
+│  └────────────────────────────────────────────────┘  │
+└──────────────────────────────────────────────────────┘
+  </div>
+
+  <p><strong>Ventajas:</strong> Multiplataforma, desarrollo web estándar, API oficial de Microsoft, no requiere software adicional.</p>
+  <p><strong>Desventajas:</strong> Requiere HTTPS local, Office.js es asíncrono, límite ~10MB en getOoxml().</p>
+
+  <h3>3.2 Matriz Comparativa de Enfoques</h3>
+  <div class="table-wrap">
+  <table>
+    <tr><th>Criterio</th><th style="text-align:center">Add-in<br>Office.js</th><th style="text-align:center">VSTO<br>.NET</th><th style="text-align:center">MCP<br>Server</th><th style="text-align:center">COM<br>pywin32</th></tr>
+    <tr><td>Multiplataforma</td><td style="text-align:center"><span class="stars">★★★★★</span></td><td style="text-align:center">★☆☆☆☆</td><td style="text-align:center"><span class="stars">★★★★★</span></td><td style="text-align:center">★☆☆☆☆</td></tr>
+    <tr><td>UI en Word</td><td style="text-align:center"><span class="stars">★★★★★</span></td><td style="text-align:center"><span class="stars">★★★★★</span></td><td style="text-align:center">☆☆☆☆☆</td><td style="text-align:center">★☆☆☆☆</td></tr>
+    <tr><td>Facilidad desarrollo</td><td style="text-align:center"><span class="stars">★★★★</span>☆</td><td style="text-align:center">★★☆☆☆</td><td style="text-align:center"><span class="stars">★★★★★</span></td><td style="text-align:center">★★★☆☆</td></tr>
+    <tr><td>Acceso API Word</td><td style="text-align:center">★★★☆☆</td><td style="text-align:center"><span class="stars">★★★★★</span></td><td style="text-align:center">☆☆☆☆☆</td><td style="text-align:center"><span class="stars">★★★★★</span></td></tr>
+    <tr><td>Headless (sin Word)</td><td style="text-align:center">☆☆☆☆☆</td><td style="text-align:center">☆☆☆☆☆</td><td style="text-align:center"><span class="stars">★★★★★</span></td><td style="text-align:center">☆☆☆☆☆</td></tr>
+    <tr><td>Streaming (SSE/WS)</td><td style="text-align:center"><span class="stars">★★★★</span>☆</td><td style="text-align:center"><span class="stars">★★★★</span>☆</td><td style="text-align:center">★★★☆☆</td><td style="text-align:center"><span class="stars">★★★★</span>☆</td></tr>
+    <tr><td>Distribución</td><td style="text-align:center">★★★☆☆</td><td style="text-align:center">★★☆☆☆</td><td style="text-align:center"><span class="stars">★★★★★</span></td><td style="text-align:center">★★★☆☆</td></tr>
+  </table>
+  </div>
+</section>
+
+<!-- 4. MCP Servers -->
+<section id="s4">
+  <h2>4. MCP Servers para Word: Análisis Comparativo</h2>
+
+  <div class="card accent-left">
+    <h3>GongRzhe/Office-Word-MCP-Server <span class="stars">★★★★★</span> 1,902</h3>
+    <p><strong>Stack:</strong> Python + python-docx + FastMCP<br>
+    <strong>Herramientas:</strong> 50+ (crear, leer, formatear, tablas, comentarios, protección)<br>
+    <strong>Estado:</strong> <span class="badge badge-yellow">ARCHIVADO Mar 2026</span><br>
+    <span class="badge badge-blue">PyPI</span> <span class="badge badge-blue">Smithery</span> <span class="badge badge-blue">Docker</span></p>
+    <p><strong>Fortalezas:</strong> Más popular, documentación extensa, disponible en PyPI<br>
+    <strong>Debilidades:</strong> Sin mantenimiento, basado en python-docx (no preserva 100% formato)</p>
+  </div>
+
+  <div class="card accent-left">
+    <h3>PsychQuant/che-word-mcp ★3</h3>
+    <p><strong>Stack:</strong> Swift puro + OOXML nativo (sin dependencias)<br>
+    <strong>Herramientas:</strong> 233 herramientas MCP<br>
+    <strong>Estado:</strong> <span class="badge badge-green">MUY ACTIVO v3.13.5 (Abr 2026)</span></p>
+    <p><strong>Fortalezas:</strong> Byte-perfect round-trip, Track Changes programáticos, 100% cobertura OOXML P0, binario único<br>
+    <strong>Debilidades:</strong> Solo macOS, comunidad pequeña</p>
+  </div>
+
+  <div class="card accent-left">
+    <h3>OfficeMCP/OfficeMCP ★78</h3>
+    <p><strong>Stack:</strong> Python + COM (Windows) + FastMCP<br>
+    <strong>Herramientas:</strong> Full Office suite (Word, Excel, PowerPoint, Access, Outlook, Visio, Project, WPS)<br>
+    <strong>Estado:</strong> <span class="badge badge-green">ACTIVO v1.0.5</span></p>
+    <p><strong>Fortalezas:</strong> Suite completa, acceso total via COM<br>
+    <strong>Debilidades:</strong> SOLO Windows, requiere Office instalado, ejecuta código Python arbitrario</p>
+  </div>
+</section>
+
+<!-- 5. Arquitectura Propuesta -->
+<section id="s5">
+  <h2>5. Arquitectura Propuesta</h2>
+
+  <div class="card green-left">
+    <h3>Arquitectura Híbrida (3 Capas)</h3>
+    <p>Combinamos los mejores enfoques en capas complementarias:</p>
+  </div>
+
+  <div class="arch-diagram">
+┌─────────────────────────────────────────────────────────────────────┐
+│                    HERMES WORD INTEGRATION                           │
+│                                                                      │
+│  ┌──────────────────────────────────────────────────────────────┐   │
+│  │ CAPA 1: IN-APP (Word Add-in)                           ⭐MVP │   │
+│  │  taskpane.html  ←→  taskpane.js  ←→  backend_server.py       │   │
+│  │  (Chat UI)           (Office.js)       (FastAPI :8765)        │   │
+│  │                                                                │   │
+│  │  Flujos:                                                       │   │
+│  │  1. Leer doc → getOoxml() → POST /chat → LLM → respuesta      │   │
+│  │  2. Insertar → insertText() en selección/final/inicio         │   │
+│  │  3. Analizar → extraer métricas, estructura, sugerencias      │   │
+│  │  4. Resumir → bullet points, abstract ejecutivo               │   │
+│  │  5. Reescribir → mejorar claridad, tono, gramática            │   │
+│  │  6. Traducir → EN↔ES manteniendo formato                      │   │
+│  └──────────────────────────────────────────────────────────────┘   │
+│                                                                      │
+│  ┌──────────────────────────────────────────────────────────────┐   │
+│  │ CAPA 2: HEADLESS (CLI + python-docx)                          │   │
+│  │  hermes word read contrato.docx                                │   │
+│  │  hermes word create --from-md informe.md --output informe.docx │   │
+│  │  hermes word analyze --metrics --suggestions propuesta.docx    │   │
+│  │  hermes word convert contrato.docx --to markdown               │   │
+│  └──────────────────────────────────────────────────────────────┘   │
+│                                                                      │
+│  ┌──────────────────────────────────────────────────────────────┐   │
+│  │ CAPA 3: MCP SERVER (protocolo estándar)                       │   │
+│  │  Integrar che-word-mcp o GongRzhe como MCP server             │   │
+│  │  → Hermes Agent lo descubre automáticamente                   │   │
+│  │  → 233 herramientas disponibles sin código adicional          │   │
+│  └──────────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────┘
+  </div>
+
+  <h3>5.2 Stack Tecnológico</h3>
+  <div class="table-wrap">
+  <table>
+    <tr><th>Capa</th><th>Tecnología</th><th>Propósito</th></tr>
+    <tr><td>Frontend</td><td>HTML5 + CSS3 + Vanilla JS</td><td>UI del chat en el task pane de Word</td></tr>
+    <tr><td>API Word</td><td>Office.js</td><td>Leer/escribir documento activo</td></tr>
+    <tr><td>Markdown</td><td>marked.js + highlight.js</td><td>Renderizado de respuestas</td></tr>
+    <tr><td>Backend</td><td>FastAPI + uvicorn</td><td>Servidor HTTP/WebSocket local</td></tr>
+    <tr><td>Streaming</td><td>WebSocket / SSE</td><td>Streaming de tokens del LLM</td></tr>
+    <tr><td>LLM</td><td>DeepSeek v4 / GPT-4o / Claude</td><td>Procesamiento de lenguaje</td></tr>
+    <tr><td>Headless</td><td>python-docx + mammoth</td><td>Manipulación de archivos .docx</td></tr>
+    <tr><td>Conversión</td><td>markitdown (Microsoft)</td><td>docx → markdown avanzado</td></tr>
+  </table>
+  </div>
+
+  <h3>5.3 API Endpoints</h3>
+  <pre><code>POST /chat          → Enviar mensaje + documento para procesamiento
+GET  /health         → Health check del servidor
+WS   /ws             → Canal WebSocket para streaming bidireccional
+GET  /stream         → SSE (Server-Sent Events) para streaming unidireccional</code></pre>
+
+  <h3>5.4 Seguridad</h3>
+  <div class="table-wrap">
+  <table>
+    <tr><th>Capa</th><th>Medida</th></tr>
+    <tr><td>Transporte</td><td>HTTPS (TLS 1.3) con certificado autofirmado local</td></tr>
+    <tr><td>CORS</td><td>Restringido a <code>localhost:3000</code></td></tr>
+    <tr><td>API Keys</td><td>Variables de entorno (nunca en frontend)</td></tr>
+    <tr><td>Rate Limiting</td><td>100 req/min por sesión</td></tr>
+    <tr><td>Input</td><td>Sanitización OOXML (defensa XXE)</td></tr>
+    <tr><td>Auditoría</td><td>Logs de uso (sin datos de documentos)</td></tr>
+    <tr><td>Sesión</td><td>Timeout de 30 min inactividad</td></tr>
+  </table>
+  </div>
+</section>
+
+<!-- 6. Plan de Implementación -->
+<section id="s6">
+  <h2>6. Plan de Implementación</h2>
+
+  <h3>Fase 1: MVP <span class="badge badge-green">3-5 días</span></h3>
+  <table>
+    <tr><td style="width:80px"><strong>Día 1</strong></td><td>Backend Hermes: FastAPI + /chat + DeepSeek v4 + procesamiento OOXML</td></tr>
+    <tr><td><strong>Día 2</strong></td><td>Frontend Add-in: taskpane.html + Office.js (getOoxml, insertText) + fetch()</td></tr>
+    <tr><td><strong>Día 3</strong></td><td>Funcionalidades Core: Leer, Analizar, Resumir, Reescribir, Insertar, Historial</td></tr>
+    <tr><td><strong>Día 4</strong></td><td>Pulido UX: Streaming SSE/WS, Markdown rendering, loading indicator, manejo de errores</td></tr>
+    <tr><td><strong>Día 5</strong></td><td>Testing + Documentación: README, manifest.xml, script de setup</td></tr>
+  </table>
+
+  <h3>Fase 2: Producción <span class="badge badge-yellow">2-3 semanas</span></h3>
+  <table>
+    <tr><td style="width:100px"><strong>Semana 1</strong></td><td>MCP server integration, multi-LLM, templates de prompts, chunking docs grandes</td></tr>
+    <tr><td><strong>Semana 2</strong></td><td>WebSocket sesiones, historial SQLite, formato rico, comandos slash, atajos teclado</td></tr>
+    <tr><td><strong>Semana 3</strong></td><td>Microsoft Graph API, packaging, GitHub Releases, tests E2E, CI/CD</td></tr>
+  </table>
+
+  <h3>Fase 3: Premium <span class="badge badge-blue">1-2 meses</span></h3>
+  <p>Track Changes, comparación de documentos, traducción multi-idioma, voice dictation, RAG, modo colaborativo, Microsoft AppSource.</p>
+</section>
+
+<!-- 7. Competitive Landscape -->
+<section id="s7">
+  <h2>7. Competitive Landscape</h2>
+  <div class="table-wrap">
+  <table>
+    <tr><th>Solución</th><th style="text-align:center">Chat en Word</th><th style="text-align:center">Open Source</th><th style="text-align:center">Custom LLM</th><th style="text-align:center">Track<br>Changes</th><th>Precio</th></tr>
+    <tr>
+      <td><strong>Hermes Word Add-in</strong></td>
+      <td style="text-align:center">✅</td><td style="text-align:center">✅</td><td style="text-align:center">✅</td><td style="text-align:center">🔜</td>
+      <td><span class="badge badge-green">Gratis</span></td>
+    </tr>
+    <tr><td>Microsoft Copilot</td><td style="text-align:center">✅</td><td style="text-align:center">❌</td><td style="text-align:center">❌</td><td style="text-align:center">✅</td><td>$30/usr/mes</td></tr>
+    <tr><td>Grammarly</td><td style="text-align:center">✅</td><td style="text-align:center">❌</td><td style="text-align:center">❌</td><td style="text-align:center">❌</td><td>$12/usr/mes</td></tr>
+    <tr><td>WordTune</td><td style="text-align:center">✅</td><td style="text-align:center">❌</td><td style="text-align:center">❌</td><td style="text-align:center">❌</td><td>$10/usr/mes</td></tr>
+    <tr><td>ChatGPT (manual)</td><td style="text-align:center">❌</td><td style="text-align:center">❌</td><td style="text-align:center">❌</td><td style="text-align:center">❌</td><td>$20/usr/mes</td></tr>
+  </table>
+  </div>
+
+  <h3>Ventajas Competitivas de Hermes</h3>
+  <ol>
+    <li><strong>Open source total</strong> — Sin vendor lock-in, auditable, customizable</li>
+    <li><strong>Multi-LLM</strong> — DeepSeek, OpenAI, Claude, modelos locales (llama.cpp)</li>
+    <li><strong>Privacidad</strong> — Datos nunca salen de la máquina local</li>
+    <li><strong>Extensible</strong> — Skills/plugins por tipo de documento</li>
+    <li><strong>Integración MCP</strong> — Compatible con el ecosistema de herramientas AI</li>
+    <li><strong>Costo cero</strong> — Sin suscripciones (solo API keys de LLM)</li>
+  </ol>
+</section>
+
+<!-- 8. Riesgos -->
+<section id="s8">
+  <h2>8. Riesgos y Desafíos</h2>
+
+  <h3>Riesgos Técnicos</h3>
+  <div class="table-wrap">
+  <table>
+    <tr><th>Riesgo</th><th style="text-align:center">Impacto</th><th style="text-align:center">Prob.</th><th>Mitigación</th></tr>
+    <tr>
+      <td>Office.js limita tamaño de OOXML</td>
+      <td style="text-align:center"><span class="badge badge-yellow">Medio</span></td>
+      <td style="text-align:center">Alta</td>
+      <td>Chunking por secciones, usar getHtml()</td>
+    </tr>
+    <tr>
+      <td>HTTPS requerido para desarrollo</td>
+      <td style="text-align:center"><span class="badge badge-green">Bajo</span></td>
+      <td style="text-align:center">Alta</td>
+      <td>Cert autofirmado o ngrok</td>
+    </tr>
+    <tr>
+      <td>Latencia LLM > 5s</td>
+      <td style="text-align:center"><span class="badge badge-yellow">Medio</span></td>
+      <td style="text-align:center">Media</td>
+      <td>Streaming + indicador de progreso</td>
+    </tr>
+    <tr>
+      <td>Corrupción de OOXML en round-trip</td>
+      <td style="text-align:center"><span class="badge badge-red">Alto</span></td>
+      <td style="text-align:center">Media</td>
+      <td>che-word-mcp (byte-perfect) o python-docx con tests</td>
+    </tr>
+  </table>
+  </div>
+
+  <h3>Riesgos de Producto</h3>
+  <div class="table-wrap">
+  <table>
+    <tr><th>Riesgo</th><th style="text-align:center">Impacto</th><th>Mitigación</th></tr>
+    <tr>
+      <td>Microsoft mejora Copilot</td>
+      <td style="text-align:center"><span class="badge badge-red">Alto</span></td>
+      <td>Diferenciación: open source, custom LLMs, privacidad</td>
+    </tr>
+    <tr>
+      <td>Baja adopción (instalación compleja)</td>
+      <td style="text-align:center"><span class="badge badge-yellow">Medio</span></td>
+      <td>Script de setup automatizado, MSI installer</td>
+    </tr>
+  </table>
+  </div>
+</section>
+
+<!-- 9. Conclusiones -->
+<section id="s9">
+  <h2>9. Conclusiones y Recomendaciones</h2>
+
+  <div class="card green-left">
+    <h3>Recomendación Principal</h3>
+    <p><strong>Implementar el Enfoque A (Office Web Add-in) como MVP</strong>, complementado con:</p>
+    <ol>
+      <li><strong>Backend Python (FastAPI + WebSocket)</strong> corriendo localmente</li>
+      <li><strong>Integración MCP opcional</strong> via che-word-mcp (macOS) o office-word-mcp-server (cross-platform)</li>
+      <li><strong>CLI complementaria</strong> para operaciones headless via python-docx</li>
+    </ol>
+  </div>
+
+  <div class="card accent-left">
+    <h3>Quick Wins (bajo esfuerzo, alto impacto)</h3>
+    <table>
+      <tr><td style="width:120px"><strong>CLI hermes word</strong></td><td>python-docx (1 día) → utilidad inmediata</td></tr>
+      <tr><td><strong>MCP server</strong></td><td>Integración (1 día) → 50-233 herramientas gratis</td></tr>
+      <tr><td><strong>Add-in básico</strong></td><td>Chat panel (3 días) → producto diferenciador</td></tr>
+      <tr><td><strong>Skill</strong></td><td>~/.hermes/skills/ → reutilizar conocimiento</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>Estado Actual del Proyecto</h3>
+    <p>El proyecto ya cuenta con:</p>
+    <ul>
+      <li>✅ Skill <code>word-hermes-addin</code> con arquitectura definida</li>
+      <li>✅ Skill <code>word-office-integration</code> con enfoques A y B</li>
+      <li>✅ Backend server funcional (<code>backend_server.py</code>)</li>
+      <li>✅ Frontend HTML/JS básico (<code>frontend.html</code>)</li>
+      <li>✅ Manifest XML para sideload</li>
+      <li>✅ Modo simulación sin Word (pruebas en navegador)</li>
+    </ul>
+    <p style="margin-top:14px"><strong>Próximo paso inmediato:</strong> Completar el frontend con streaming SSE/WebSocket y pulir la UX.</p>
+  </div>
+</section>
+
+<!-- 10. Referencias -->
+<section id="s10">
+  <h2>10. Referencias</h2>
+
+  <h3>Proyectos GitHub</h3>
+  <table>
+    <tr><td><code>GongRzhe/Office-Word-MCP-Server</code></td><td><a href="https://github.com/GongRzhe/Office-Word-MCP-Server" style="color:var(--accent)">github.com/GongRzhe/Office-Word-MCP-Server</a></td></tr>
+    <tr><td><code>OfficeMCP/OfficeMCP</code></td><td><a href="https://github.com/OfficeMCP/OfficeMCP" style="color:var(--accent)">github.com/OfficeMCP/OfficeMCP</a></td></tr>
+    <tr><td><code>PsychQuant/che-word-mcp</code></td><td><a href="https://github.com/PsychQuant/che-word-mcp" style="color:var(--accent)">github.com/PsychQuant/che-word-mcp</a></td></tr>
+    <tr><td><code>ForLegalAI/mcp-ms-office-documents</code></td><td><a href="https://github.com/ForLegalAI/mcp-ms-office-documents" style="color:var(--accent)">github.com/ForLegalAI/mcp-ms-office-documents</a></td></tr>
+    <tr><td><code>vAirpower/macos-office365-mcp-server</code></td><td><a href="https://github.com/vAirpower/macos-office365-mcp-server" style="color:var(--accent)">github.com/vAirpower/macos-office365-mcp-server</a></td></tr>
+    <tr><td><code>ecator/cs-office-mcp-server</code></td><td><a href="https://github.com/ecator/cs-office-mcp-server" style="color:var(--accent)">github.com/ecator/cs-office-mcp-server</a></td></tr>
+  </table>
+
+  <h3>Documentación Oficial</h3>
+  <table>
+    <tr><td>Office Add-ins docs</td><td><a href="https://learn.microsoft.com/en-us/office/dev/add-ins/" style="color:var(--accent)">learn.microsoft.com/office/dev/add-ins</a></td></tr>
+    <tr><td>Word JavaScript API</td><td><a href="https://learn.microsoft.com/en-us/javascript/api/word" style="color:var(--accent)">learn.microsoft.com/javascript/api/word</a></td></tr>
+    <tr><td>Model Context Protocol</td><td><a href="https://modelcontextprotocol.io/" style="color:var(--accent)">modelcontextprotocol.io</a></td></tr>
+    <tr><td>python-docx</td><td><a href="https://python-docx.readthedocs.io/" style="color:var(--accent)">python-docx.readthedocs.io</a></td></tr>
+    <tr><td>FastMCP Python SDK</td><td><a href="https://github.com/modelcontextprotocol/python-sdk" style="color:var(--accent)">github.com/modelcontextprotocol/python-sdk</a></td></tr>
+  </table>
+
+  <h3>Skills Internas de Hermes</h3>
+  <table>
+    <tr><td><code>word-hermes-addin</code></td><td><code>~/.hermes/skills/productivity/word-hermes-addin/SKILL.md</code></td></tr>
+    <tr><td><code>word-office-integration</code></td><td><code>~/.hermes/skills/word-office-integration/SKILL.md</code></td></tr>
+  </table>
+</section>
+
+<footer>
+  <p>Hermes Agent — Word Integration Research Report</p>
+  <p style="color: var(--text-dim); margin-top: 4px;">Generado el 29 de abril de 2026 · DeepSeek v4-pro · <a href="https://hermes-agent.nousresearch.com" style="color: var(--accent);">hermes-agent.nousresearch.com</a></p>
+</footer>
+
+</div>
+</body>
+</html>
