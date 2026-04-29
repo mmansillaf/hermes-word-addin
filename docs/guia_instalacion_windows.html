@@ -69,7 +69,7 @@
 
   <div class="answer-box">
     <strong>¿Necesito instalar Hermes Agent?</strong>
-    <p><strong>NO.</strong> El backend (<code>backend_server.py</code>) es un servidor Python autónomo que llama directamente a la API de DeepSeek (u OpenAI). No requiere Hermes Agent instalado. Si en el futuro querés usar features avanzadas (skills, memoria, RAG), podés instalar Hermes Agent y delegarle tareas. Pero para el MVP <strong>no es necesario</strong>.</p>
+    <p><strong>NO.</strong> El backend (<code>backend_server.py</code>) es un servidor Python autónomo que llama directamente a la API del LLM que elijas (DeepSeek, OpenAI, Anthropic, Ollama local, etc.). No requiere Hermes Agent instalado.</p>
   </div>
 
   <section>
@@ -79,7 +79,7 @@
       <tr><td>Windows</td><td>10 u 11, 64-bit</td></tr>
       <tr><td>Microsoft Word</td><td>2016 o superior (Desktop, no Online)</td></tr>
       <tr><td>Python</td><td>3.8 o superior</td></tr>
-      <tr><td>API Key</td><td>DeepSeek (recomendado) u OpenAI</td></tr>
+      <tr><td>API Key</td><td>DeepSeek, OpenAI, Anthropic, o endpoint compatible</td></tr>
       <tr><td>Git</td><td>Para clonar el repositorio</td></tr>
     </table>
   </section>
@@ -108,11 +108,36 @@ cd hermes-word-addin</code></pre>
       </li>
 
       <li>
-        <h3>Configurar API Key</h3>
-        <p>En PowerShell (reemplazar con tu key):</p>
-        <pre><code>$env:DEEPSEEK_API_KEY="sk-tu-api-key-aqui"</code></pre>
+        <h3>Configurar proveedor LLM y API Key</h3>
+        <p>Elegí tu proveedor:</p>
+
+        <p style="margin-top:12px"><strong>DeepSeek</strong> (recomendado, mejor relación costo/calidad):</p>
+        <pre><code>$env:LLM_PROVIDER="deepseek"
+$env:DEEPSEEK_API_KEY="sk-tu-key"</code></pre>
+
+        <p style="margin-top:10px"><strong>OpenAI:</strong></p>
+        <pre><code>$env:LLM_PROVIDER="openai"
+$env:OPENAI_API_KEY="sk-tu-key"
+$env:LLM_MODEL="gpt-4o"    # opcional, default: gpt-4o-mini</code></pre>
+
+        <p style="margin-top:10px"><strong>Anthropic Claude:</strong></p>
+        <pre><code>$env:LLM_PROVIDER="anthropic"
+$env:ANTHROPIC_API_KEY="sk-ant-tu-key"</code></pre>
+
+        <p style="margin-top:10px"><strong>Ollama local</strong> (gratis, sin internet):</p>
+        <pre><code>$env:LLM_PROVIDER="openai-compatible"
+$env:LLM_BASE_URL="http://localhost:11434/v1/chat/completions"
+$env:LLM_MODEL="llama3.1:8b"
+$env:LLM_API_KEY="ollama"</code></pre>
+
+        <p style="margin-top:10px"><strong>Groq / Together / vLLM</strong> (cualquier endpoint OpenAI-compatible):</p>
+        <pre><code>$env:LLM_PROVIDER="openai-compatible"
+$env:LLM_BASE_URL="https://api.groq.com/openai/v1/chat/completions"
+$env:LLM_API_KEY="gsk-tu-key"
+$env:LLM_MODEL="llama-3.1-8b-instant"</code></pre>
+
         <p style="margin-top:8px">Para que persista entre reinicios:</p>
-        <p>Win+R → <code>sysdm.cpl</code> → Avanzadas → Variables de entorno → Nueva: <code>DEEPSEEK_API_KEY</code></p>
+        <p>Win+R → <code>sysdm.cpl</code> → Avanzadas → Variables de entorno → Nueva variable de sistema</p>
       </li>
 
       <li>
@@ -160,15 +185,15 @@ python backend_server.py --port 8765</code></pre>
 │  └──────────────┬───────────────────────┘  │
 │                 │ HTTP (localhost:8765)     │
 │  ┌──────────────▼───────────────────────┐  │
-│  │  backend_server.py                   │  │
+│  │  backend_server.py (multi-proveedor) │  │
 │  │  - Sirve frontend.html               │  │
 │  │  - Endpoint /chat                    │  │
-│  │  - Llama a DeepSeek API              │  │
+│  │  - DeepSeek / OpenAI / Claude / Ollama│  │
 │  └──────────────┬───────────────────────┘  │
 │                 │ HTTPS                     │
 └─────────────────┼───────────────────────────┘
                   ▼
-        DeepSeek API (nube)</div>
+   LLM API (DeepSeek / OpenAI / Anthropic / Ollama)</div>
   </section>
 
   <section>
@@ -191,7 +216,7 @@ python backend_server.py --port 8765</code></pre>
 
     <div class="problem-box">
       <strong>Error de API key</strong>
-      <p>La variable de entorno <code>DEEPSEEK_API_KEY</code> no está configurada. Revisá el Paso 4.</p>
+      <p>La variable de entorno de tu proveedor no esta configurada. Revisa el Paso 4 segun el proveedor elegido.</p>
     </div>
   </section>
 
