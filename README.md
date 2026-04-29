@@ -12,6 +12,10 @@
 Leé, analizá, resumí, reescribí y editá documentos<br>usando DeepSeek, OpenAI o Claude sin salir de Word.</p>
 
 <p align="center">
+  🌐 <a href="https://mmansillaf.github.io/hermes-word-addin/"><strong>Documentación online</strong></a>
+</p>
+
+<p align="center">
   <a href="#-quick-start">Quick Start</a> ·
   <a href="#-instalacion-completa">Instalación</a> ·
   <a href="#-arquitectura">Arquitectura</a> ·
