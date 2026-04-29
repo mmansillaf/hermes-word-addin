@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guía de Instalación — Hermes Word Add-in en Windows</title>
+<style>
+  :root {
+    --bg: #0d1117; --bg-card: #161b22; --bg-code: #1a1f2b;
+    --border: #30363d; --text: #c9d1d9; --heading: #e6edf3;
+    --accent: #58a6ff; --green: #3fb950; --warn: #d2991d;
+    --font-mono: 'Cascadia Code', 'Fira Code', monospace;
+    --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font-sans); line-height: 1.7; }
+  .container { max-width: 860px; margin: 0 auto; padding: 0 24px; }
+
+  .hero { background: linear-gradient(135deg, #0d1117 0%, #1a2332 100%); border-bottom: 1px solid var(--border); padding: 48px 0 40px; text-align: center; }
+  .hero h1 { font-size: 2rem; color: var(--heading); }
+  .hero h1 span { color: var(--accent); }
+  .hero p { color: #8b949e; margin-top: 8px; font-size: 1.05rem; }
+
+  .answer-box { background: rgba(63,185,80,0.08); border: 1px solid rgba(63,185,80,0.3); border-radius: 10px; padding: 18px 22px; margin: 28px 0; }
+  .answer-box strong { color: var(--green); font-size: 1.1rem; }
+  .answer-box p { margin: 6px 0 0; }
+
+  section { margin: 40px 0; }
+  h2 { font-size: 1.35rem; color: var(--heading); border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-bottom: 18px; }
+  h3 { font-size: 1.1rem; color: var(--accent); margin: 24px 0 10px; }
+
+  ol.steps { list-style: none; counter-reset: step; }
+  ol.steps > li { counter-increment: step; background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 22px 26px; margin-bottom: 16px; }
+  ol.steps > li::before { content: "Paso " counter(step); display: block; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--accent); font-weight: 700; margin-bottom: 6px; }
+  ol.steps h3 { margin: 4px 0 6px; color: var(--heading); font-size: 1.1rem; }
+
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.88rem; }
+  th { background: var(--bg-code); color: var(--heading); padding: 9px 14px; text-align: left; border-bottom: 2px solid var(--border); text-transform: uppercase; letter-spacing: 0.04em; font-size: 0.75rem; }
+  td { padding: 9px 14px; border-bottom: 1px solid var(--border); }
+  tr:hover td { background: rgba(88,166,255,0.03); }
+
+  pre { background: var(--bg-code); border: 1px solid var(--border); border-radius: 8px; padding: 14px 18px; overflow-x: auto; margin: 10px 0; font-size: 0.82rem; font-family: var(--font-mono); }
+  code { font-family: var(--font-mono); font-size: 0.85rem; background: var(--bg-code); padding: 2px 6px; border-radius: 4px; }
+  pre code { background: none; padding: 0; }
+  .inline-code { background: var(--bg-code); padding: 2px 7px; border-radius: 4px; font-size: 0.85rem; }
+
+  .arch-box { background: var(--bg-code); border: 1px solid var(--border); border-radius: 10px; padding: 24px 28px; margin: 20px 0; white-space: pre; font-family: var(--font-mono); font-size: 0.76rem; line-height: 1.45; overflow-x: auto; }
+
+  .problem-box { background: rgba(210,153,29,0.06); border: 1px solid rgba(210,153,29,0.25); border-radius: 8px; padding: 12px 18px; margin: 12px 0; }
+  .problem-box strong { color: var(--warn); }
+
+  .next-steps { background: rgba(88,166,255,0.05); border: 1px solid rgba(88,166,255,0.2); border-radius: 8px; padding: 18px 22px; margin: 28px 0; }
+
+  footer { border-top: 1px solid var(--border); padding: 24px 0; margin-top: 48px; text-align: center; color: #8b949e; font-size: 0.85rem; }
+
+  @media (max-width: 768px) { .hero h1 { font-size: 1.5rem; } }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="container">
+    <h1>Guía de Instalación<br><span>Hermes Word Add-in</span> en Windows</h1>
+    <p>Paso a paso — panel de chat AI dentro de Microsoft Word</p>
+  </div>
+</header>
+
+<div class="container">
+
+  <div class="answer-box">
+    <strong>¿Necesito instalar Hermes Agent?</strong>
+    <p><strong>NO.</strong> El backend (<code>backend_server.py</code>) es un servidor Python autónomo que llama directamente a la API de DeepSeek (u OpenAI). No requiere Hermes Agent instalado. Si en el futuro querés usar features avanzadas (skills, memoria, RAG), podés instalar Hermes Agent y delegarle tareas. Pero para el MVP <strong>no es necesario</strong>.</p>
+  </div>
+
+  <section>
+    <h2>Requisitos Previos</h2>
+    <table>
+      <tr><th>Requisito</th><th>Detalle</th></tr>
+      <tr><td>Windows</td><td>10 u 11, 64-bit</td></tr>
+      <tr><td>Microsoft Word</td><td>2016 o superior (Desktop, no Online)</td></tr>
+      <tr><td>Python</td><td>3.8 o superior</td></tr>
+      <tr><td>API Key</td><td>DeepSeek (recomendado) u OpenAI</td></tr>
+      <tr><td>Git</td><td>Para clonar el repositorio</td></tr>
+    </table>
+  </section>
+
+  <section>
+    <h2>Pasos de Instalación</h2>
+    <ol class="steps">
+
+      <li>
+        <h3>Instalar Python en Windows</h3>
+        <p>Descargar de <a href="https://www.python.org/downloads/" style="color:var(--accent)">python.org</a>, ejecutar el instalador, y <strong>marcar "Add Python to PATH"</strong>. Verificar:</p>
+        <pre><code>python --version</code></pre>
+      </li>
+
+      <li>
+        <h3>Clonar el repositorio</h3>
+        <pre><code>cd C:\Users\TU_USUARIO\
+git clone https://github.com/mmansillaf/hermes-word-addin.git
+cd hermes-word-addin</code></pre>
+        <p style="font-size:0.85rem;color:#8b949e;">Si no tenés Git: <a href="https://git-scm.com/download/win" style="color:var(--accent)">git-scm.com/download/win</a></p>
+      </li>
+
+      <li>
+        <h3>Instalar dependencias Python</h3>
+        <pre><code>pip install fastapi uvicorn websockets</code></pre>
+      </li>
+
+      <li>
+        <h3>Configurar API Key</h3>
+        <p>En PowerShell (reemplazar con tu key):</p>
+        <pre><code>$env:DEEPSEEK_API_KEY="sk-tu-api-key-aqui"</code></pre>
+        <p style="margin-top:8px">Para que persista entre reinicios:</p>
+        <p>Win+R → <code>sysdm.cpl</code> → Avanzadas → Variables de entorno → Nueva: <code>DEEPSEEK_API_KEY</code></p>
+      </li>
+
+      <li>
+        <h3>Lanzar el backend</h3>
+        <pre><code>cd src
+python backend_server.py --port 8765</code></pre>
+        <p>Debe mostrar: <code style="color:var(--green)">Listening on http://localhost:8765</code></p>
+        <p style="color:var(--warn);font-size:0.85rem;">⚠️ No cierres esta ventana. El servidor debe correr mientras usás Word.</p>
+        <p style="margin-top:8px;font-size:0.9rem;">Probar sin Word: abrí <code>http://localhost:8765</code> en tu navegador.</p>
+      </li>
+
+      <li>
+        <h3>Instalar el Add-in en Word</h3>
+        <p><strong>6.1 Habilitar Programador:</strong> Archivo > Opciones > Personalizar cinta > marcar <strong>Programador</strong></p>
+        <p style="margin-top:8px"><strong>6.2 Cargar manifest:</strong> Pestaña Programador > Complementos > MIS COMPLEMENTOS > Cargar mi complemento > Seleccionar <code>manifest.xml</code> de la carpeta <code>src/</code></p>
+        <p style="margin-top:8px"><strong>6.3 Abrir panel:</strong> Click en botón "Hermes AI" en pestaña Inicio</p>
+      </li>
+
+      <li>
+        <h3>Usar el Add-in</h3>
+        <table>
+          <tr><th>Botón</th><th>Qué hace</th></tr>
+          <tr><td><strong>Leer doc</strong></td><td>Carga el texto del documento activo</td></tr>
+          <tr><td><strong>Analizar</strong></td><td>Hermes analiza estructura, métricas, sugiere mejoras</td></tr>
+          <tr><td><strong>Resumir</strong></td><td>Genera 3-5 bullet points del documento</td></tr>
+          <tr><td><strong>Reescribir</strong></td><td>Mejora claridad y profesionalismo</td></tr>
+          <tr><td><strong>Insertar en doc</strong></td><td>Inserta la respuesta al final del documento</td></tr>
+        </table>
+        <p style="margin-top:8px">También podés escribir consultas libres y presionar Enter.</p>
+      </li>
+
+    </ol>
+  </section>
+
+  <section>
+    <h2>Arquitectura</h2>
+    <div class="arch-box">Windows 10/11
+┌────────────────────────────────────────────┐
+│  Microsoft Word                             │
+│  ┌──────────────────────────────────────┐  │
+│  │  Task Pane (panel lateral)           │  │
+│  │  frontend.html + Office.js           │  │
+│  │  Leer doc: getOoxml()                │  │
+│  │  Escribir: insertText()              │  │
+│  └──────────────┬───────────────────────┘  │
+│                 │ HTTP (localhost:8765)     │
+│  ┌──────────────▼───────────────────────┐  │
+│  │  backend_server.py                   │  │
+│  │  - Sirve frontend.html               │  │
+│  │  - Endpoint /chat                    │  │
+│  │  - Llama a DeepSeek API              │  │
+│  └──────────────┬───────────────────────┘  │
+│                 │ HTTPS                     │
+└─────────────────┼───────────────────────────┘
+                  ▼
+        DeepSeek API (nube)</div>
+  </section>
+
+  <section>
+    <h2>Solución de Problemas</h2>
+
+    <div class="problem-box">
+      <strong>"No se pudo cargar el complemento"</strong>
+      <p>Verificá que el backend está corriendo (Paso 5). Abrí http://localhost:8765 en el navegador. Cerrá y reabrí Word.</p>
+    </div>
+
+    <div class="problem-box">
+      <strong>"Failed to fetch" en el panel</strong>
+      <p>El backend no responde. La ventana de PowerShell debe seguir abierta con el servidor. Verificá el puerto con <code>netstat -an | findstr 8765</code>.</p>
+    </div>
+
+    <div class="problem-box">
+      <strong>El texto no se inserta en el documento</strong>
+      <p>El documento debe estar en modo edición. Verificá que no esté protegido o en solo lectura.</p>
+    </div>
+
+    <div class="problem-box">
+      <strong>Error de API key</strong>
+      <p>La variable de entorno <code>DEEPSEEK_API_KEY</code> no está configurada. Revisá el Paso 4.</p>
+    </div>
+  </section>
+
+  <div class="next-steps">
+    <h3 style="margin-top:0;color:var(--accent)">Próximos Pasos (Mejoras)</h3>
+    <ol style="padding-left:20px;">
+      <li><strong>Streaming:</strong> Respuestas en tiempo real via SSE/WebSocket</li>
+      <li><strong>HTTPS local:</strong> Certificado autofirmado para desarrollo</li>
+      <li><strong>Historial persistente:</strong> Guardar conversaciones en SQLite</li>
+      <li><strong>Insertar en selección:</strong> Reemplazar el texto seleccionado</li>
+      <li><strong>Formato rico:</strong> Negritas, cursivas, tablas en las respuestas</li>
+    </ol>
+  </div>
+
+  <footer>
+    <p>Hermes Agent — Word Add-in</p>
+    <p style="margin-top:4px"><a href="https://github.com/mmansillaf/hermes-word-addin" style="color:var(--accent)">github.com/mmansillaf/hermes-word-addin</a></p>
+  </footer>
+
+</div>
+</body>
+</html>
