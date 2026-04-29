@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hermes Word Add-in — Documentación</title>
+<style>
+  :root {
+    --bg: #0d1117; --bg-card: #161b22; --border: #30363d;
+    --text: #c9d1d9; --heading: #e6edf3; --accent: #58a6ff; --green: #3fb950;
+    --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font-sans); line-height: 1.6; min-height: 100vh; }
+  .hero { background: linear-gradient(135deg, #0d1117 0%, #1a2332 100%); border-bottom: 1px solid var(--border); padding: 60px 0 50px; text-align: center; }
+  .hero h1 { font-size: 2.4rem; color: var(--heading); font-weight: 800; }
+  .hero span { color: var(--accent); }
+  .hero p { color: #8b949e; margin-top: 10px; font-size: 1.1rem; }
+  .container { max-width: 780px; margin: 0 auto; padding: 0 24px; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 18px; margin: 36px 0; }
+  .card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 24px; transition: border-color 0.2s;
+    text-decoration: none; display: block; color: inherit;
+  }
+  .card:hover { border-color: var(--accent); }
+  .card h3 { color: var(--heading); font-size: 1.1rem; margin-bottom: 6px; }
+  .card p { color: #8b949e; font-size: 0.9rem; }
+  .card .icon { font-size: 1.6rem; margin-bottom: 10px; }
+  .card .tag { display: inline-block; font-size: 0.7rem; padding: 2px 8px; border-radius: 8px; margin-top: 10px; }
+  .tag-doc { background: rgba(88,166,255,0.12); color: var(--accent); }
+  .tag-research { background: rgba(63,185,80,0.12); color: var(--green); }
+  .tag-guide { background: rgba(210,153,29,0.12); color: #d2991d; }
+  .footer { border-top: 1px solid var(--border); padding: 28px 0; margin-top: 48px; text-align: center; color: #8b949e; font-size: 0.85rem; }
+  a.inline { color: var(--accent); text-decoration: none; }
+  a.inline:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>Hermes <span>Word Add-in</span></h1>
+  <p>Documentación · Guías · Investigación</p>
+</div>
+
+<div class="container">
+
+  <div class="cards">
+
+    <a href="guia_instalacion_windows.html" class="card">
+      <div class="icon">📘</div>
+      <h3>Guía de Instalación — Windows</h3>
+      <p>Paso a paso detallado para instalar y configurar el add-in en Windows 10/11. Desde Python hasta el primer chat en Word.</p>
+      <span class="tag tag-guide">Guía</span>
+    </a>
+
+    <a href="INFORME_TECNICO_HERMES_WORD.html" class="card">
+      <div class="icon">📋</div>
+      <h3>Informe Técnico</h3>
+      <p>Documento para el equipo de desarrollo: arquitectura, implementación, prototipo validado y plan de despliegue.</p>
+      <span class="tag tag-doc">Documentación</span>
+    </a>
+
+    <a href="../research/informe_integracion.html" class="card">
+      <div class="icon">🔬</div>
+      <h3>Informe de Integración</h3>
+      <p>Investigación exhaustiva: 6 MCP servers, 4 enfoques de integración, competitive landscape, riesgos y recomendaciones.</p>
+      <span class="tag tag-research">Investigación</span>
+    </a>
+
+    <a href="https://github.com/mmansillaf/hermes-word-addin" class="card">
+      <div class="icon">💻</div>
+      <h3>Repositorio GitHub</h3>
+      <p>Código fuente, README, requerimientos, licencia MIT.</p>
+      <span class="tag tag-doc">Código</span>
+    </a>
+
+  </div>
+
+  <p style="text-align:center;color:#8b949e;margin-top:20px;">
+    También disponible en <a class="inline" href="guia_instalacion_windows.md">Markdown</a> ·
+    <a class="inline" href="INFORME_TECNICO_HERMES_WORD.md">MD</a> ·
+    <a class="inline" href="../research/informe_integracion.md">MD</a>
+  </p>
+
+</div>
+
+<div class="footer">
+  <p>Hermes Agent · <a class="inline" href="https://github.com/mmansillaf/hermes-word-addin">github.com/mmansillaf/hermes-word-addin</a></p>
+</div>
+
+</body>
+</html>
