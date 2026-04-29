@@ -19,7 +19,7 @@ Si en el futuro queres usar features avanzadas de Hermes (skills, memoria persis
 | Windows 10/11 | 64-bit |
 | Microsoft Word | 2016 o superior (Desktop, no Online) |
 | Python | 3.8 o superior |
-| API Key | DeepSeek (recomendado) u OpenAI |
+| API Key | DeepSeek, OpenAI, Anthropic, o endpoint compatible |
 | Git | Para clonar el repo |
 
 ---
@@ -67,18 +67,42 @@ python -m pip install fastapi uvicorn websockets
 
 ---
 
-## Paso 4: Configurar API Key
+## Paso 4: Configurar proveedor LLM y API Key
 
-En PowerShell (reemplaza con tu key real):
+Elegi tu proveedor configurando estas variables de entorno:
 
+**DeepSeek (recomendado, mejor relacion costo/calidad):**
 ```powershell
-set DEEPSEEK_API_KEY=sk-tu-api-key-aqui
+$env:LLM_PROVIDER="deepseek"
+$env:DEEPSEEK_API_KEY="sk-tu-key"
 ```
 
-Para que persista entre reinicios, crea una variable de entorno del sistema:
+**OpenAI:**
+```powershell
+$env:LLM_PROVIDER="openai"
+$env:OPENAI_API_KEY="sk-tu-key"
+$env:LLM_MODEL="gpt-4o"    # opcional, default: gpt-4o-mini
+```
+
+**Anthropic Claude:**
+```powershell
+$env:LLM_PROVIDER="anthropic"
+$env:ANTHROPIC_API_KEY="sk-ant-tu-key"
+$env:LLM_MODEL="claude-sonnet-4-20250514"  # opcional
+```
+
+**Endpoint OpenAI-compatible (Groq, Together, llama.cpp, vLLM, Ollama, etc.):**
+```powershell
+$env:LLM_PROVIDER="openai-compatible"
+$env:LLM_BASE_URL="https://api.groq.com/openai/v1/chat/completions"
+$env:LLM_API_KEY="gsk_tu-key"
+$env:LLM_MODEL="llama-3.1-8b-instant"
+```
+
+Para que persista entre reinicios, crea variables de entorno del sistema:
 1. Win + R, escribir `sysdm.cpl`
 2. Pestana "Opciones avanzadas" > "Variables de entorno"
-3. Nueva variable de sistema: `DEEPSEEK_API_KEY` = `sk-tu-api-key`
+3. Nueva variable de sistema para cada una de las que necesites
 
 ---
 

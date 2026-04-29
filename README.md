@@ -66,9 +66,23 @@ cd hermes-word-addin
 # 2. Instalar dependencias
 pip install -r requirements.txt
 
-# 3. Configurar API key
-# Windows PowerShell:
+# 3. Elegir proveedor y configurar API key
+# DeepSeek:
+$env:LLM_PROVIDER="deepseek"
 $env:DEEPSEEK_API_KEY="sk-tu-key"
+
+# OpenAI:
+$env:LLM_PROVIDER="openai"
+$env:OPENAI_API_KEY="sk-tu-key"
+
+# Anthropic Claude:
+$env:LLM_PROVIDER="anthropic"
+$env:ANTHROPIC_API_KEY="sk-ant-tu-key"
+
+# Ollama local / Groq / vLLM / cualquier OpenAI-compatible:
+$env:LLM_PROVIDER="openai-compatible"
+$env:LLM_BASE_URL="http://localhost:11434/v1/chat/completions"
+$env:LLM_MODEL="llama3.1:8b"
 
 # 4. Lanzar backend
 cd src
@@ -78,6 +92,25 @@ python backend_server.py --port 8765
 ```
 
 Abrí `http://localhost:8765` en tu navegador para probar sin Word.
+
+---
+
+### Proveedores Soportados
+
+| Proveedor | Variable | Default Model | Costo |
+|-----------|----------|---------------|-------|
+| **DeepSeek** | `DEEPSEEK_API_KEY` | `deepseek-chat` | $0.14/1M tokens |
+| **OpenAI** | `OPENAI_API_KEY` | `gpt-4o-mini` | $0.15/1M tokens |
+| **Anthropic** | `ANTHROPIC_API_KEY` | `claude-sonnet-4` | $3/1M tokens |
+| **OpenAI-compatible** | `LLM_API_KEY` + `LLM_BASE_URL` | configurable | variable |
+
+Para **Ollama local** (gratis, sin internet):
+```powershell
+$env:LLM_PROVIDER="openai-compatible"
+$env:LLM_BASE_URL="http://localhost:11434/v1/chat/completions"
+$env:LLM_MODEL="llama3.1:8b"
+$env:LLM_API_KEY="ollama"   # Ollama no requiere key real
+```
 
 ---
 
