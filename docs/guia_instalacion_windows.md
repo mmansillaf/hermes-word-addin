@@ -192,6 +192,27 @@ El backend no esta accesible. Verifica:
 
 Office.js requiere que el documento este en modo edicion (no solo lectura). Asegurate de que el documento no esta protegido.
 
+### "El panel se queda en blanco o no carga"
+
+Word exige HTTPS para add-ins en produccion. Durante desarrollo con sideload, HTTP funciona, pero puede fallar segun la version de Word. Si el panel no carga:
+
+1. Abri http://localhost:8765 en tu navegador — si carga ahi pero no en Word, es problema de HTTPS
+2. Solucion rapida: usar ngrok para tunel HTTPS → `ngrok http 8765`
+3. Actualizar `manifest.xml` con la URL de ngrok
+
+### Firewall bloquea el puerto
+
+Windows Defender puede bloquear localhost:8765. Para permitirlo:
+```powershell
+netsh advfirewall firewall add rule name="Hermes Word" dir=in action=allow protocol=TCP localport=8765
+```
+
+### Documentos muy grandes se cuelgan al leer
+
+Office.js tiene un limite en `getOoxml()` (~10MB). Para documentos largos (>50 pags):
+- Usa "Leer doc" y si falla, copia y pega solo la seccion que necesitas
+- Proxima version: chunking automatico por secciones
+
 ### Error de API key
 
 Si ves "No API key configured", la variable de entorno no esta configurada. Revisa el Paso 4.

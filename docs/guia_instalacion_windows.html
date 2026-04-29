@@ -215,6 +215,31 @@ python backend_server.py --port 8765</code></pre>
     </div>
 
     <div class="problem-box">
+      <strong>El panel se queda en blanco o no carga</strong>
+      <p>Word exige HTTPS para add-ins. Durante desarrollo con sideload HTTP funciona, pero puede fallar según la versión de Word. Si el panel no carga:</p>
+      <ol style="margin:6px 0 0 16px;">
+        <li>Probá <code>http://localhost:8765</code> en tu navegador — si carga ahí pero no en Word, es problema de HTTPS</li>
+        <li>Usá <strong>ngrok</strong> para tunnel HTTPS: <code>ngrok http 8765</code></li>
+        <li>Actualizá <code>manifest.xml</code> con la URL de ngrok</li>
+      </ol>
+    </div>
+
+    <div class="problem-box">
+      <strong>Firewall bloquea el puerto</strong>
+      <p>Windows Defender puede bloquear localhost:8765. Para permitirlo:</p>
+      <pre><code>netsh advfirewall firewall add rule name="Hermes Word" dir=in action=allow protocol=TCP localport=8765</code></pre>
+    </div>
+
+    <div class="problem-box">
+      <strong>Documentos muy grandes se cuelgan al leer</strong>
+      <p>Office.js tiene un límite en <code>getOoxml()</code> (~10MB). Para documentos largos (>50 págs):</p>
+      <ul style="margin:6px 0 0 16px;">
+        <li>Usá "Leer doc" y si falla, copiá y pegá solo la sección que necesitás</li>
+        <li>Próxima versión: chunking automático por secciones</li>
+      </ul>
+    </div>
+
+    <div class="problem-box">
       <strong>Error de API key</strong>
       <p>La variable de entorno de tu proveedor no esta configurada. Revisa el Paso 4 segun el proveedor elegido.</p>
     </div>
